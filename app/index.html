@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quotation Management</title>
+<style>
+:root{box-sizing:border-box;--bg:#f4f5f9;--card:#fff;--tx:#1b1d2a;--mu:#6b6f85;--bd:#e1e3ec;--side:#15162b;--side2:#25275a;--ac:#ef3e4f;--ok:#1e9e62;
+padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1020;--card:#191a30;--tx:#eceefa;--mu:#9a9db8;--bd:#2c2e4d}}
+*,*:before,*:after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);display:flex;min-height:100vh}
+aside{width:250px;background:var(--side);color:#fff;padding:20px 12px;flex-shrink:0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+aside h1{font-size:18px;margin:4px 10px 20px;font-weight:700}
+.g>button,.sub button{all:unset;display:flex;align-items:center;gap:10px;width:100%;padding:10px;border-radius:8px;cursor:pointer;box-sizing:border-box;font-size:14px}
+.g>button{font-weight:600}.g>button:hover,.sub button:hover{background:var(--side2)}
+.g>button .ar{margin-left:auto;transition:transform .2s}.g.open>button .ar{transform:rotate(90deg)}
+.sub{display:none;padding:2px 0 6px 14px}.g.open .sub{display:block;background:rgba(255,255,255,.04);border-radius:8px}
+.sub button{font-weight:400;opacity:.9}.sub button.on{background:var(--ac);opacity:1;font-weight:600}
+.me{margin-top:auto;padding:12px 10px;background:var(--side2);border-radius:8px;font-size:13px}
+main{flex:1;padding:26px;min-width:0}
+main h2{margin:0 0 18px;font-size:22px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:18px;margin-bottom:16px}
+.wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:560px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--bd);font-size:14px}
+th{color:var(--mu);font-weight:600}
+label{display:block;font-size:13px;color:var(--mu);margin:12px 0 4px}
+input,select,textarea{width:100%;padding:9px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);font:inherit}
+.btn{background:var(--ac);color:#fff;border:0;border-radius:7px;padding:9px 16px;font:inherit;font-weight:600;cursor:pointer}
+.btn.s{padding:4px 10px;font-size:13px;margin-right:4px}.btn.g2{background:var(--ok)}.btn.o{background:transparent;color:var(--tx);border:1px solid var(--bd)}
+.tag{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:600;background:var(--bd)}
+.tag.Accepted,.tag.Done{background:#d3f3e2;color:#0d6b40}.tag.Declined,.tag.Overdue{background:#fcdadd;color:#a3182a}.tag.Sent{background:#dbe4ff;color:#2b4bb0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0 16px}
+.line{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;margin-bottom:8px}
+.bar{height:10px;background:var(--ac);border-radius:5px}
+.empty{color:var(--mu);padding:20px 0;text-align:center}
+#mb{display:none}
+@media(max-width:760px){body{display:block}aside{position:fixed;z-index:5;left:0;top:0;transform:translateX(-100%);transition:transform .2s;padding-top:calc(20px + env(safe-area-inset-top,0px))}aside.show{transform:none}
+#mb{display:block;margin-bottom:12px}main{padding:16px}.line{grid-template-columns:1fr 1fr}}
+</style></head><body>
+<aside id="side"></aside>
+<main><button class="btn o" id="mb">☰ Menu</button><div id="v"></div></main>
+<script>
+var K="quotation-mgmt-v1",today=new Date().toISOString().slice(0,10),S,view="q:All",openG="Quotations";
+try{S=JSON.parse(localStorage.getItem(K))}catch(e){}
+S=S||{users:[{name:"omar hegazy",email:"",role:"Admin"}],products:[],clients:[],companies:[],quotations:[],requests:[]};
+function save(){try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+var M=[["Quotations",[["Create Quotation","qform"],["All Quotations","q:All"],["New Quotations","q:New"],["Sent To Client","q:Sent"],["Accepted","q:Accepted"],["Declined","q:Declined"],["Analyze decline","analyze"]]],
+["Users",[["Add User","add:users"],["All Users","list:users"]]],
+["Products / Services",[["Add Product / Service","add:products"],["All Products / Services","list:products"]]],
+["Clients",[["Add Client","add:clients"],["All Clients","list:clients"]]],
+["Admin",[["Create Company","add:companies"],["Company Details","list:companies"]]],
+["Quotation Requests",[["Request Quotation","add:requests"],["All Requests","req:all"],["My Requests","req:my"],["Overdue Requests","req:overdue"]]]];
+var clientOpts=function(){return S.clients.map(function(c){return c.name})};
+var F={
+users:{t:"User",f:[["name","Name"],["email","Email","email"],["role","Role","select",["Admin","Sales","Viewer"]]],to:"list:users"},
+products:{t:"Product / Service",f:[["name","Name"],["type","Type","select",["Product","Service"]],["price","Unit price","number"],["desc","Description","textarea"]],to:"list:products"},
+clients:{t:"Client",f:[["name","Client name"],["contact","Contact person"],["email","Email","email"],["phone","Phone"],["address","Address","textarea"]],to:"list:clients"},
+companies:{t:"Company",f:[["name","Company name"],["tax","Tax / VAT number"],["email","Email","email"],["phone","Phone"],["address","Address","textarea"]],to:"list:companies"},
+requests:{t:"Quotation Request",f:[["client","Client","select",clientOpts],["details","What is requested","textarea"],["due","Due date","date"]],to:"req:all"}};
+var L={users:["name","email","role"],products:["name","type","price","desc"],clients:["name","contact","email","phone"],companies:["name","tax","email","phone"]};
+function menu(){var h='<h1>Quotation Management</h1>';
+M.forEach(function(g){var o=g[0]===openG;h+='<div class="g'+(o?" open":"")+'"><button data-g="'+g[0]+'"><span>'+g[0]+'</span><span class="ar">›</span></button><div class="sub">';
+g[1].forEach(function(s){h+='<button data-v="'+s[1]+'" class="'+(view===s[1]?"on":"")+'">'+s[0]+'</button>'});h+='</div></div>'});
+h+='<div class="me">'+esc(S.users[0]?S.users[0].name:"")+'</div>';document.getElementById("side").innerHTML=h}
+document.getElementById("side").onclick=function(e){var b=e.target.closest("button");if(!b)return;
+if(b.dataset.g){openG=openG===b.dataset.g?"":b.dataset.g;menu()}else if(b.dataset.v){go(b.dataset.v);this.classList.remove("show")}};
+document.getElementById("mb").onclick=function(){document.getElementById("side").classList.toggle("show")};
+function go(v){view=v;menu();render()}
+function field(f){var n=f[0],t=f[2]||"text",o=f[3],h='<label>'+f[1]+'</label>';
+if(t==="textarea")return h+'<textarea name="'+n+'" rows="3"></textarea>';
+if(t==="select"){var a=typeof o==="function"?o():o;return h+'<select name="'+n+'">'+a.map(function(x){return'<option>'+esc(x)+'</option>'}).join("")+'</select>'}
+return h+'<input name="'+n+'" type="'+t+'" '+(n==="name"?"required":"")+'>'}
+function addForm(k){var c=F[k],h='<h2>Add '+c.t+'</h2><div class="card"><div class="grid">'+c.f.map(field).join("")+'</div><p><button class="btn" id="sv">Save</button></p></div>';
+if(k==="requests"&&!S.clients.length)h+='<p class="empty">Add a client first so you can pick one.</p>';
+v(h);document.getElementById("sv").onclick=function(){var r={},ok=true;
+c.f.forEach(function(f){var el=document.querySelector('[name="'+f[0]+'"]');r[f[0]]=el.value.trim();if(f[0]==="name"&&!r.name)ok=false});
+if(!ok){alert("Name is required.");return}
+if(k==="requests"){if(!r.client||!r.due){alert("Choose a client and a due date.");return}r.owner=S.users[0].name;r.status="Open";r.created=today}
+r.id=Date.now();S[k].push(r);save();go(c.to)}}
+function v(h){document.getElementById("v").innerHTML=h}
+function list(k){var cols=L[k],h='<h2>All '+F[k].t+'s</h2><div class="card wrap">';
+if(!S[k].length)h+='<div class="empty">Nothing here yet. Use the Add option in the menu.</div>';
+else h+='<table><tr>'+cols.map(function(c){return'<th>'+c+'</th>'}).join("")+'<th></th></tr>'+S[k].map(function(r){return'<tr>'+cols.map(function(c){return'<td>'+esc(r[c])+'</td>'}).join("")+'<td><button class="btn s o" data-del="'+r.id+'">Delete</button></td></tr>'}).join("")+'</table>';
+v(h+'</div>');document.getElementById("v").onclick=function(e){var d=e.target.dataset.del;if(d&&confirm("Delete this record?")){S[k]=S[k].filter(function(r){return String(r.id)!==d});save();render()}}}
+function reqList(m){var rs=S.requests.filter(function(r){var od=r.status!=="Done"&&r.due<today;
+return m==="all"||(m==="my"&&r.owner===S.users[0].name)||(m==="overdue"&&od)});
+var t={all:"All Requests",my:"My Requests",overdue:"Overdue Requests"}[m],h='<h2>'+t+'</h2><div class="card wrap">';
+if(!rs.length)h+='<div class="empty">No requests to show.</div>';
+else h+='<table><tr><th>Client</th><th>Details</th><th>Due</th><th>Owner</th><th>Status</th><th></th></tr>'+rs.map(function(r){var od=r.status!=="Done"&&r.due<today;
+return'<tr><td>'+esc(r.client)+'</td><td>'+esc(r.details)+'</td><td>'+esc(r.due)+'</td><td>'+esc(r.owner)+'</td><td><span class="tag '+(od?"Overdue":r.status)+'">'+(od?"Overdue":r.status)+'</span></td><td>'+(r.status!=="Done"?'<button class="btn s g2" data-done="'+r.id+'">Mark done</button>':"")+'<button class="btn s o" data-q="'+r.id+'">Create quotation</button></td></tr>'}).join("")+'</table>';
+v(h+'</div>');document.getElementById("v").onclick=function(e){var d=e.target.dataset;
+if(d.done){S.requests.forEach(function(r){if(String(r.id)===d.done)r.status="Done"});save();render()}
+if(d.q){var r=S.requests.filter(function(x){return String(x.id)===d.q})[0];go("qform");document.querySelector('[name="client"]').value=r.client}}}
+function qform(){if(!S.clients.length||!S.products.length){v('<h2>Create Quotation</h2><div class="card empty">Add at least one client and one product / service first.</div>');return}
+var po=S.products.map(function(p,i){return'<option value="'+i+'">'+esc(p.name)+'</option>'}).join("");
+v('<h2>Create Quotation</h2><div class="card"><div class="grid"><div><label>Client</label><select name="client">'+S.clients.map(function(c){return'<option>'+esc(c.name)+'</option>'}).join("")+'</select></div><div><label>Valid until</label><input type="date" id="vu"></div><div><label>Tax %</label><input type="number" id="tx" value="14" min="0"></div></div>'+
+'<label>Items</label><div id="ls"></div><button class="btn o s" id="al">+ Add item</button><p><b>Total: <span id="tt">0.00</span></b></p><label>Notes</label><textarea id="nt" rows="2"></textarea><p><button class="btn" id="sv">Save quotation</button></p></div>');
+var ls=document.getElementById("ls");
+function calc(){var s=0;ls.querySelectorAll(".line").forEach(function(l){var i=l.querySelectorAll("input");s+=i[0].value*i[1].value});
+document.getElementById("tt").textContent=(s*(1+document.getElementById("tx").value/100)).toFixed(2)}
+function addLine(){var d=document.createElement("div");d.className="line";d.innerHTML='<select>'+po+'</select><input type="number" min="1" value="1"><input type="number" min="0" step="0.01"><button class="btn s o">✕</button>';
+var sel=d.querySelector("select"),pr=d.querySelectorAll("input")[1];pr.value=S.products[0].price||0;
+sel.onchange=function(){pr.value=S.products[sel.value].price||0;calc()};d.querySelector("button").onclick=function(){d.remove();calc()};ls.appendChild(d);calc()}
+ls.oninput=calc;document.getElementById("tx").oninput=calc;document.getElementById("al").onclick=addLine;addLine();
+document.getElementById("sv").onclick=function(){var items=[];ls.querySelectorAll(".line").forEach(function(l){var i=l.querySelectorAll("input");items.push({name:S.products[l.querySelector("select").value].name,qty:+i[0].value,price:+i[1].value})});
+if(!items.length){alert("Add at least one item.");return}
+var tax=+document.getElementById("tx").value,sub=items.reduce(function(a,i){return a+i.qty*i.price},0);
+S.quotations.push({id:Date.now(),no:"Q-"+String(S.quotations.length+1).padStart(3,"0"),client:document.querySelector('[name="client"]').value,date:today,valid:document.getElementById("vu").value,items:items,tax:tax,total:+(sub*(1+tax/100)).toFixed(2),notes:document.getElementById("nt").value,status:"New"});save();go("q:New")}}
+function qlist(st){var rs=S.quotations.filter(function(q){return st==="All"||q.status===st}),h='<h2>'+(st==="All"?"All Quotations":st==="Sent"?"Sent To Client":st+" Quotations")+'</h2><div class="card wrap">';
+if(!rs.length)h+='<div class="empty">No quotations here yet.</div>';
+else h+='<table><tr><th>No.</th><th>Client</th><th>Date</th><th>Items</th><th>Total</th><th>Status</th><th></th></tr>'+rs.map(function(q){var a="";
+if(q.status==="New")a='<button class="btn s" data-s="Sent" data-id="'+q.id+'">Send to client</button>';
+if(q.status==="Sent")a='<button class="btn s g2" data-s="Accepted" data-id="'+q.id+'">Accept</button><button class="btn s" data-s="Declined" data-id="'+q.id+'">Decline</button>';
+return'<tr><td>'+q.no+'</td><td>'+esc(q.client)+'</td><td>'+q.date+'</td><td>'+q.items.map(function(i){return esc(i.name)+" ×"+i.qty}).join(", ")+'</td><td>'+q.total.toFixed(2)+'</td><td><span class="tag '+q.status+'">'+q.status+(q.reason?" – "+esc(q.reason):"")+'</span></td><td>'+a+'<button class="btn s o" data-p="'+q.id+'">Print</button></td></tr>'}).join("")+'</table>';
+v(h+'</div>');document.getElementById("v").onclick=function(e){var d=e.target.dataset;
+if(d.s){var q=S.quotations.filter(function(x){return String(x.id)===d.id})[0];
+if(d.s==="Declined"){var r=prompt("Reason for decline (price, timing, competitor, other):");if(r===null)return;q.reason=r.trim()||"Unspecified"}
+q.status=d.s;save();render()}
+if(d.p){var q2=S.quotations.filter(function(x){return String(x.id)===d.p})[0],co=S.companies[0]||{name:""},w=window.open("","_blank");if(!w)return;
+w.document.write('<title>'+q2.no+'</title><body style="font-family:sans-serif;max-width:700px;margin:30px auto"><h1>'+esc(co.name)+'</h1><h2>Quotation '+q2.no+'</h2><p>Client: '+esc(q2.client)+'<br>Date: '+q2.date+'<br>Valid until: '+esc(q2.valid)+'</p><table border=1 cellpadding=6 style="border-collapse:collapse;width:100%"><tr><th>Item</th><th>Qty</th><th>Price</th></tr>'+q2.items.map(function(i){return'<tr><td>'+esc(i.name)+'</td><td>'+i.qty+'</td><td>'+i.price.toFixed(2)+'</td></tr>'}).join("")+'</table><p>Tax: '+q2.tax+'%</p><h3>Total: '+q2.total.toFixed(2)+'</h3><p>'+esc(q2.notes)+'</p>');w.document.close();w.print()}}}
+function analyze(){var d=S.quotations.filter(function(q){return q.status==="Declined"}),all=S.quotations.length,c={};
+d.forEach(function(q){c[q.reason||"Unspecified"]=(c[q.reason||"Unspecified"]||0)+1});
+var h='<h2>Analyze decline</h2><div class="card"><p>Declined: <b>'+d.length+'</b> of '+all+' quotations ('+(all?Math.round(d.length/all*100):0)+'%). Lost value: <b>'+d.reduce(function(a,q){return a+q.total},0).toFixed(2)+'</b></p>';
+var ks=Object.keys(c);if(!ks.length)h+='<div class="empty">No declined quotations yet.</div>';
+ks.sort(function(a,b){return c[b]-c[a]}).forEach(function(k){h+='<p>'+esc(k)+' – '+c[k]+'<div class="bar" style="width:'+Math.round(c[k]/d.length*100)+'%"></div></p>'});v(h+'</div>')}
+function render(){var p=view.split(":"),a=p[0],b=p[1];
+if(view==="qform")qform();else if(a==="q")qlist(b);else if(view==="analyze")analyze();else if(a==="add")addForm(b);else if(a==="list")list(b);else if(a==="req")reqList(b)}
+menu();render();
+</script></body></html>
