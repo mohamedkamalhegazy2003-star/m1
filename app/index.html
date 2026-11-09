@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8">
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Quotation Management</title>
 <style>
@@ -8,124 +8,413 @@ padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bott
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1020;--card:#191a30;--tx:#eceefa;--mu:#9a9db8;--bd:#2c2e4d}}
 *,*:before,*:after{box-sizing:inherit}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
-body{margin:0;font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);display:flex;min-height:100vh}
+/* Arabic-capable font stack first so Arabic text is shaped and spaced correctly */
+body{margin:0;font:15px/1.6 "Segoe UI",Tahoma,"Noto Naskh Arabic","Noto Sans Arabic",system-ui,-apple-system,Roboto,Arial,sans-serif;background:var(--bg);color:var(--tx);display:flex;min-height:100vh}
 aside{width:250px;background:var(--side);color:#fff;padding:20px 12px;flex-shrink:0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
 aside h1{font-size:18px;margin:4px 10px 20px;font-weight:700}
-.g>button,.sub button{all:unset;display:flex;align-items:center;gap:10px;width:100%;padding:10px;border-radius:8px;cursor:pointer;box-sizing:border-box;font-size:14px}
+.g>button,.sub button{all:unset;display:flex;align-items:center;gap:10px;width:100%;padding:10px;border-radius:8px;cursor:pointer;box-sizing:border-box;font-size:14px;text-align:start}
 .g>button{font-weight:600}.g>button:hover,.sub button:hover{background:var(--side2)}
-.g>button .ar{margin-left:auto;transition:transform .2s}.g.open>button .ar{transform:rotate(90deg)}
-.sub{display:none;padding:2px 0 6px 14px}.g.open .sub{display:block;background:rgba(255,255,255,.04);border-radius:8px}
+.g>button .ar{margin-inline-start:auto;transition:transform .2s}.g.open>button .ar{transform:rotate(90deg)}
+[dir=rtl] .g>button .ar{transform:scaleX(-1)}[dir=rtl] .g.open>button .ar{transform:rotate(90deg)}
+.sub{display:none;padding:2px 0 6px 0;padding-inline-start:14px}.g.open .sub{display:block;background:rgba(255,255,255,.04);border-radius:8px}
 .sub button{font-weight:400;opacity:.9}.sub button.on{background:var(--ac);opacity:1;font-weight:600}
 .me{margin-top:auto;padding:12px 10px;background:var(--side2);border-radius:8px;font-size:13px}
+.lg{all:unset;display:block;margin-top:10px;padding:9px 10px;border:1px solid rgba(255,255,255,.3);border-radius:8px;cursor:pointer;text-align:center;font-size:13px}
+.lg:hover{background:var(--side2)}
 main{flex:1;padding:26px;min-width:0}
 main h2{margin:0 0 18px;font-size:22px}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:18px;margin-bottom:16px}
 .wrap{overflow-x:auto}
 table{border-collapse:collapse;width:100%;min-width:560px}
-th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--bd);font-size:14px}
+th,td{text-align:start;padding:9px 10px;border-bottom:1px solid var(--bd);font-size:14px;unicode-bidi:plaintext}
 th{color:var(--mu);font-weight:600}
 label{display:block;font-size:13px;color:var(--mu);margin:12px 0 4px}
-input,select,textarea{width:100%;padding:9px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);font:inherit}
+input,select,textarea{width:100%;padding:9px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);font:inherit;text-align:start}
+input[dir=ltr]{text-align:left}[dir=rtl] input[dir=ltr]{text-align:right}
+input[type=checkbox]{width:auto}
 .btn{background:var(--ac);color:#fff;border:0;border-radius:7px;padding:9px 16px;font:inherit;font-weight:600;cursor:pointer}
-.btn.s{padding:4px 10px;font-size:13px;margin-right:4px}.btn.g2{background:var(--ok)}.btn.o{background:transparent;color:var(--tx);border:1px solid var(--bd)}
+.btn.s{padding:4px 10px;font-size:13px;margin-inline-end:4px}.btn.g2{background:var(--ok)}.btn.o{background:transparent;color:var(--tx);border:1px solid var(--bd)}
 .tag{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:600;background:var(--bd)}
 .tag.Accepted,.tag.Done{background:#d3f3e2;color:#0d6b40}.tag.Declined,.tag.Overdue{background:#fcdadd;color:#a3182a}.tag.Sent{background:#dbe4ff;color:#2b4bb0}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0 16px}
 .line{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;margin-bottom:8px}
 .bar{height:10px;background:var(--ac);border-radius:5px}
 .empty{color:var(--mu);padding:20px 0;text-align:center}
+.bt{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+.bt select{width:auto}
+.mu{color:var(--mu);font-size:13px}
+.ok{color:var(--ok);font-weight:600}
+.mono{direction:ltr;unicode-bidi:plaintext;font-family:Consolas,monospace;font-size:13px}
+#toast{position:fixed;bottom:20px;inset-inline-start:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:8px;max-width:90vw;display:none;z-index:20;font-size:14px}
 #mb{display:none}
-@media(max-width:760px){body{display:block}aside{position:fixed;z-index:5;left:0;top:0;transform:translateX(-100%);transition:transform .2s;padding-top:calc(20px + env(safe-area-inset-top,0px))}aside.show{transform:none}
+@media(max-width:760px){body{display:block}aside{position:fixed;z-index:5;left:0;top:0;transform:translateX(-100%);transition:transform .2s;padding-top:calc(20px + env(safe-area-inset-top,0px))}
+[dir=rtl] aside{left:auto;right:0;transform:translateX(100%)}aside.show,[dir=rtl] aside.show{transform:none}
 #mb{display:block;margin-bottom:12px}main{padding:16px}.line{grid-template-columns:1fr 1fr}}
 </style></head><body>
 <aside id="side"></aside>
-<main><button class="btn o" id="mb">☰ Menu</button><div id="v"></div></main>
+<main><button class="btn o" id="mb">☰</button><div id="v"></div></main>
+<div id="toast"></div>
 <script>
-var K="quotation-mgmt-v1",today=new Date().toISOString().slice(0,10),S,view="q:All",openG="Quotations";
-try{S=JSON.parse(localStorage.getItem(K))}catch(e){}
-S=S||{users:[{name:"omar hegazy",email:"",role:"Admin"}],products:[],clients:[],companies:[],quotations:[],requests:[]};
-function save(){try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}}
-function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
-var M=[["Quotations",[["Create Quotation","qform"],["All Quotations","q:All"],["New Quotations","q:New"],["Sent To Client","q:Sent"],["Accepted","q:Accepted"],["Declined","q:Declined"],["Analyze decline","analyze"]]],
-["Users",[["Add User","add:users"],["All Users","list:users"]]],
-["Products / Services",[["Add Product / Service","add:products"],["All Products / Services","list:products"]]],
-["Clients",[["Add Client","add:clients"],["All Clients","list:clients"]]],
-["Admin",[["Create Company","add:companies"],["Company Details","list:companies"]]],
-["Quotation Requests",[["Request Quotation","add:requests"],["All Requests","req:all"],["My Requests","req:my"],["Overdue Requests","req:overdue"]]]];
-var clientOpts=function(){return S.clients.map(function(c){return c.name})};
+/* ================= translations ================= */
+var T={en:{
+app_title:"Quotation Management",
+g_quotations:"Quotations",g_users:"Users",g_products:"Products / Services",g_clients:"Clients",g_admin:"Admin",g_requests:"Quotation Requests",
+m_create_q:"Create Quotation",m_all_q:"All Quotations",m_new_q:"New Quotations",m_sent_q:"Sent To Client",m_accepted:"Accepted",m_declined:"Declined",m_analyze:"Analyze decline",
+m_add_user:"Add User",m_all_users:"All Users",m_add_product:"Add Product / Service",m_all_products:"All Products / Services",m_import_products:"Import from Excel",
+m_add_client:"Add Client",m_all_clients:"All Clients",m_import_clients:"Import from Excel",m_create_company:"Create Company",m_company_details:"Company Details",m_settings:"Settings",
+m_req_add:"Request Quotation",m_req_all:"All Requests",m_req_my:"My Requests",m_req_overdue:"Overdue Requests",
+add_users:"Add User",edit_users:"Edit User",list_users:"All Users",
+add_products:"Add Product / Service",edit_products:"Edit Product / Service",list_products:"All Products / Services",
+add_clients:"Add Client",edit_clients:"Edit Client",list_clients:"All Clients",
+add_companies:"Create Company",edit_companies:"Edit Company",list_companies:"Company Details",add_requests:"Request Quotation",
+c_name:"Name",c_email:"Email",c_role:"Role",c_type:"Type",c_price:"Unit price",c_desc:"Description",c_cname:"Client name",c_contact:"Contact person",c_phone:"Phone",c_address:"Address",
+c_coname:"Company name",c_tax:"Tax / VAT number",c_client:"Client",c_details:"What is requested",c_due:"Due date",c_owner:"Owner",
+v_Admin:"Admin",v_Sales:"Sales",v_Viewer:"Viewer",v_Product:"Product",v_Service:"Service",v_New:"New",v_Sent:"Sent",v_Accepted:"Accepted",v_Declined:"Declined",v_Open:"Open",v_Done:"Done",v_Overdue:"Overdue",
+save:"Save",cancel:"Cancel",edit:"Edit",del:"Delete",view:"View",back:"Back",print:"Print",pdf:"Save as PDF",wa:"Send via WhatsApp",
+name_req:"Name is required.",confirm_del:"Delete this record?",empty:"Nothing here yet. Use the Add option in the menu.",add_client_first:"Add a client first so you can pick one.",
+pick_client_due:"Choose a client and a due date.",no_req:"No requests to show.",mark_done:"Mark done",mk_q:"Create quotation",
+need_data:"Add at least one client and one product / service first.",f_company:"Company",valid_until:"Valid until",tax_pct:"Tax %",items:"Items",add_item:"+ Add item",total:"Total",notes:"Notes",
+save_q:"Save quotation",need_item:"Add at least one item.",th_no:"No.",th_date:"Date",th_status:"Status",send_client:"Send to client",accept:"Accept",decline:"Decline",no_q:"No quotations here yet.",
+decline_prompt:"Reason for decline (price, timing, competitor, other):",unspecified:"Unspecified",
+declined_of:"Declined: {d} of {a} quotations ({p}%). Lost value: {v}",no_declined:"No declined quotations yet.",
+doc_lang:"Document language",lang_ar:"العربية",lang_en:"English",desktop_only:"This works in the desktop app only.",
+enter_phone:"Client WhatsApp number (with or without country code):",bad_phone:"Invalid phone number.",
+wa_done:"PDF saved ({p}). WhatsApp is opening - attach the PDF from the folder that was opened.",pdf_done:"PDF saved: {p}",
+wa_msg:"Hello {c}, please find our quotation {n}. Total: {t}. - {co}",
+conflict:"The data was changed from another device and was reloaded. Please repeat your last change.",conn_err:"Cannot reach the server. Check the connection and restart the app.",save_err:"Could not save the data.",
+imp_title_clients:"Import clients from Excel",imp_title_products:"Import products / services from Excel",
+imp_hint:"Choose an .xlsx / .xls / .csv file. Columns are detected automatically (Arabic or English headers) and you can correct them before importing.",
+imp_choose:"Choose file",imp_change:"Choose another file",imp_sheet:"Sheet",imp_hdr:"First row is a header",imp_map:"Column mapping",imp_ignore:"- ignore -",imp_col:"Column",imp_preview:"Preview",
+imp_dup:"If the name already exists",imp_update:"Update it",imp_skip:"Skip it",imp_go:"Import {n} rows",imp_rows:"{n} rows found, {b} without a name will be skipped",
+imp_done:"Done: {a} added, {u} updated, {s} skipped.",imp_empty:"No data rows found.",imp_name_needed:"Choose which column holds the name.",imp_err:"Could not read the file: {e}",
+s_lang:"Language",s_cc:"Default country code for WhatsApp numbers",s_device:"This device",s_server:"Server - other devices connect to:",s_terminal:"Terminal - connected to:",
+s_data:"Data file:",s_change:"Change device mode",s_saved:"Saved",s_browser:"Running without the desktop shell: data is kept in this browser only.",
+doc_title:"Quotation",lang_btn:"العربية"
+},ar:{
+app_title:"إدارة عروض الأسعار",
+g_quotations:"عروض الأسعار",g_users:"المستخدمون",g_products:"الأصناف / الخدمات",g_clients:"العملاء",g_admin:"الإدارة",g_requests:"طلبات عروض الأسعار",
+m_create_q:"إنشاء عرض سعر",m_all_q:"كل عروض الأسعار",m_new_q:"عروض جديدة",m_sent_q:"المرسلة للعميل",m_accepted:"المقبولة",m_declined:"المرفوضة",m_analyze:"تحليل الرفض",
+m_add_user:"إضافة مستخدم",m_all_users:"كل المستخدمين",m_add_product:"إضافة صنف / خدمة",m_all_products:"كل الأصناف / الخدمات",m_import_products:"استيراد من إكسيل",
+m_add_client:"إضافة عميل",m_all_clients:"كل العملاء",m_import_clients:"استيراد من إكسيل",m_create_company:"إنشاء شركة",m_company_details:"بيانات الشركة",m_settings:"الإعدادات",
+m_req_add:"طلب عرض سعر",m_req_all:"كل الطلبات",m_req_my:"طلباتي",m_req_overdue:"الطلبات المتأخرة",
+add_users:"إضافة مستخدم",edit_users:"تعديل مستخدم",list_users:"كل المستخدمين",
+add_products:"إضافة صنف / خدمة",edit_products:"تعديل صنف / خدمة",list_products:"كل الأصناف / الخدمات",
+add_clients:"إضافة عميل",edit_clients:"تعديل عميل",list_clients:"كل العملاء",
+add_companies:"إنشاء شركة",edit_companies:"تعديل بيانات الشركة",list_companies:"بيانات الشركة",add_requests:"طلب عرض سعر",
+c_name:"الاسم",c_email:"البريد الإلكتروني",c_role:"الصلاحية",c_type:"النوع",c_price:"سعر الوحدة",c_desc:"الوصف",c_cname:"اسم العميل",c_contact:"الشخص المسؤول",c_phone:"الهاتف",c_address:"العنوان",
+c_coname:"اسم الشركة",c_tax:"الرقم الضريبي",c_client:"العميل",c_details:"المطلوب",c_due:"تاريخ الاستحقاق",c_owner:"المسؤول",
+v_Admin:"مدير",v_Sales:"مبيعات",v_Viewer:"مشاهد",v_Product:"صنف",v_Service:"خدمة",v_New:"جديد",v_Sent:"مرسل",v_Accepted:"مقبول",v_Declined:"مرفوض",v_Open:"مفتوح",v_Done:"منتهي",v_Overdue:"متأخر",
+save:"حفظ",cancel:"إلغاء",edit:"تعديل",del:"حذف",view:"عرض",back:"رجوع",print:"طباعة",pdf:"حفظ PDF",wa:"إرسال واتساب",
+name_req:"الاسم مطلوب.",confirm_del:"هل تريد حذف هذا السجل؟",empty:"لا يوجد شيء هنا بعد. استخدم خيار الإضافة من القائمة.",add_client_first:"أضف عميلاً أولاً لتتمكن من اختياره.",
+pick_client_due:"اختر العميل وتاريخ الاستحقاق.",no_req:"لا توجد طلبات.",mark_done:"تم",mk_q:"إنشاء عرض",
+need_data:"أضف عميلاً واحداً وصنفاً واحداً على الأقل أولاً.",f_company:"الشركة",valid_until:"صالح حتى",tax_pct:"الضريبة %",items:"الأصناف",add_item:"+ إضافة صنف",total:"الإجمالي",notes:"ملاحظات",
+save_q:"حفظ عرض السعر",need_item:"أضف صنفاً واحداً على الأقل.",th_no:"الرقم",th_date:"التاريخ",th_status:"الحالة",send_client:"إرسال للعميل",accept:"قبول",decline:"رفض",no_q:"لا توجد عروض أسعار هنا بعد.",
+decline_prompt:"سبب الرفض (السعر، التوقيت، منافس، أخرى):",unspecified:"غير محدد",
+declined_of:"المرفوضة: {d} من {a} عرض ({p}%). قيمة الخسارة: {v}",no_declined:"لا توجد عروض مرفوضة بعد.",
+doc_lang:"لغة المستند",lang_ar:"العربية",lang_en:"English",desktop_only:"هذه الميزة تعمل في برنامج سطح المكتب فقط.",
+enter_phone:"رقم واتساب العميل (بكود الدولة أو بدونه):",bad_phone:"رقم الهاتف غير صحيح.",
+wa_done:"تم حفظ ملف PDF ({p}). يتم فتح واتساب - أرفق الملف من المجلد الذي فُتح.",pdf_done:"تم حفظ PDF: {p}",
+wa_msg:"مرحباً {c}، مرفق عرض السعر رقم {n}. الإجمالي: {t}. - {co}",
+conflict:"تم تغيير البيانات من جهاز آخر وتمت إعادة تحميلها. برجاء تكرار آخر تعديل.",conn_err:"تعذّر الاتصال بالسيرفر. تأكد من الاتصال ثم أعد تشغيل البرنامج.",save_err:"تعذّر حفظ البيانات.",
+imp_title_clients:"استيراد العملاء من إكسيل",imp_title_products:"استيراد الأصناف / الخدمات من إكسيل",
+imp_hint:"اختر ملف .xlsx / .xls / .csv. يتم التعرف على الأعمدة تلقائياً (عناوين عربية أو إنجليزية) ويمكنك تصحيحها قبل الاستيراد.",
+imp_choose:"اختيار ملف",imp_change:"اختيار ملف آخر",imp_sheet:"الورقة",imp_hdr:"الصف الأول عناوين",imp_map:"ربط الأعمدة",imp_ignore:"- تجاهل -",imp_col:"عمود",imp_preview:"معاينة",
+imp_dup:"إذا كان الاسم موجوداً من قبل",imp_update:"تحديثه",imp_skip:"تخطيه",imp_go:"استيراد {n} صف",imp_rows:"تم العثور على {n} صف، وسيتم تخطي {b} صف بدون اسم",
+imp_done:"تم: إضافة {a}، تحديث {u}، تخطي {s}.",imp_empty:"لا توجد صفوف بيانات.",imp_name_needed:"اختر العمود الذي يحتوي على الاسم.",imp_err:"تعذّرت قراءة الملف: {e}",
+s_lang:"اللغة",s_cc:"كود الدولة الافتراضي لأرقام واتساب",s_device:"هذا الجهاز",s_server:"سيرفر - تتصل به الأجهزة الأخرى على:",s_terminal:"طرفي - متصل بـ:",
+s_data:"ملف البيانات:",s_change:"تغيير وضع الجهاز",s_saved:"تم الحفظ",s_browser:"يعمل بدون برنامج سطح المكتب: البيانات محفوظة في هذا المتصفح فقط.",
+doc_title:"عرض سعر",lang_btn:"English"
+}};
+var lang=(function(){try{return localStorage.getItem("qm-lang")||"ar"}catch(e){return"ar"}})();
+function t(k,o){var s=(T[lang]&&T[lang][k])||T.en[k]||k;if(o)for(var x in o)s=s.split("{"+x+"}").join(o[x]);return s}
+function tv(x){return (T[lang]&&T[lang]["v_"+x])||x}
+
+/* ================= state + storage ================= */
+var K="quotation-mgmt-v1",today=new Date().toISOString().slice(0,10),S,rev=0,view="q:All",openG="g_quotations",editing=false,docLang="ar";
+var REMOTE=location.protocol.indexOf("http")===0;
+function defaults(){return{users:[{id:1,name:"omar hegazy",email:"",role:"Admin"}],products:[],clients:[],companies:[],quotations:[],requests:[],settings:{cc:"20"}}}
+function fix(d){var b=defaults();for(var k in b)if(d[k]==null)d[k]=b[k];if(!d.settings.cc)d.settings.cc="20";return d}
+async function load(){
+ if(REMOTE){var r=await fetch("/api/state",{cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status);var j=await r.json();rev=j.rev;S=fix(j.data||{})}
+ else{var d=null;try{d=JSON.parse(localStorage.getItem(K))}catch(e){}S=fix(d||{})}}
+async function save(){
+ if(!REMOTE){try{localStorage.setItem(K,JSON.stringify(S));return true}catch(e){alert(t("save_err"));return false}}
+ try{var r=await fetch("/api/state",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({rev:rev,data:S})});
+  if(r.status===409){alert(t("conflict"));await load();render();return false}
+  if(!r.ok)throw new Error("HTTP "+r.status);rev=(await r.json()).rev;return true}
+ catch(e){alert(t("save_err"));return false}}
+async function poll(){if(!REMOTE||editing)return;
+ try{var r=await fetch("/api/rev",{cache:"no-store"}),j=await r.json();if(j.rev!==rev){await load();render()}}catch(e){}}
+
+/* ================= helpers ================= */
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function v(h){$("v").innerHTML=h}
+function find(a,id){return a.filter(function(x){return String(x.id)===String(id)})[0]}
+function money(n){return(+n||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}
+function nextId(){return Date.now()+Math.floor(Math.random()*1000)}
+function toast(m){var e=$("toast");e.textContent=m;e.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(function(){e.style.display="none"},6000)}
+function digits(s){return String(s).replace(/[٠-٩]/g,function(c){return c.charCodeAt(0)-1632}).replace(/[۰-۹]/g,function(c){return c.charCodeAt(0)-1776})}
+function waNumber(p){var s=String(p).trim(),intl=/^(\+|00)/.test(s),d=digits(s).replace(/\D/g,"");
+ if(/^00/.test(d))d=d.slice(2);
+ if(!intl){if(d.charAt(0)==="0")d=(S.settings.cc||"20")+d.slice(1);else if(d.length<11)d=(S.settings.cc||"20")+d}
+ return d.length>=8&&d.length<=15?d:""}
+
+/* ================= menu ================= */
+var M=[["g_quotations",[["m_create_q","qform"],["m_all_q","q:All"],["m_new_q","q:New"],["m_sent_q","q:Sent"],["m_accepted","q:Accepted"],["m_declined","q:Declined"],["m_analyze","analyze"]]],
+["g_users",[["m_add_user","add:users"],["m_all_users","list:users"]]],
+["g_products",[["m_add_product","add:products"],["m_all_products","list:products"],["m_import_products","imp:products"]]],
+["g_clients",[["m_add_client","add:clients"],["m_all_clients","list:clients"],["m_import_clients","imp:clients"]]],
+["g_admin",[["m_create_company","add:companies"],["m_company_details","list:companies"],["m_settings","settings"]]],
+["g_requests",[["m_req_add","add:requests"],["m_req_all","req:all"],["m_req_my","req:my"],["m_req_overdue","req:overdue"]]]];
+function menu(){var h='<h1>'+esc(t("app_title"))+'</h1>';
+ M.forEach(function(g){var o=g[0]===openG;h+='<div class="g'+(o?" open":"")+'"><button data-g="'+g[0]+'"><span>'+esc(t(g[0]))+'</span><span class="ar">›</span></button><div class="sub">';
+ g[1].forEach(function(s){h+='<button data-v="'+s[1]+'" class="'+(view===s[1]?"on":"")+'">'+esc(t(s[0]))+'</button>'});h+='</div></div>'});
+ h+='<div class="me">'+esc(S.users[0]?S.users[0].name:"")+'<button class="lg" id="lg">'+esc(t("lang_btn"))+'</button></div>';$("side").innerHTML=h}
+$("side").onclick=function(e){var b=e.target.closest("button");if(!b)return;
+ if(b.id==="lg"){setLang(lang==="ar"?"en":"ar");return}
+ if(b.dataset.g){openG=openG===b.dataset.g?"":b.dataset.g;menu()}else if(b.dataset.v){go(b.dataset.v);this.classList.remove("show")}};
+$("mb").onclick=function(){$("side").classList.toggle("show")};
+function setLang(l){lang=l;try{localStorage.setItem("qm-lang",l)}catch(e){}applyLang();menu();render()}
+function applyLang(){var h=document.documentElement;h.lang=lang;h.dir=lang==="ar"?"rtl":"ltr";document.title=t("app_title")}
+function go(x){view=x;if(x.indexOf("qv:")===0)docLang=lang;menu();render();window.scrollTo(0,0)}
+
+/* ================= generic forms (add / edit) ================= */
+function clientOpts(){return S.clients.map(function(c){return c.name})}
 var F={
-users:{t:"User",f:[["name","Name"],["email","Email","email"],["role","Role","select",["Admin","Sales","Viewer"]]],to:"list:users"},
-products:{t:"Product / Service",f:[["name","Name"],["type","Type","select",["Product","Service"]],["price","Unit price","number"],["desc","Description","textarea"]],to:"list:products"},
-clients:{t:"Client",f:[["name","Client name"],["contact","Contact person"],["email","Email","email"],["phone","Phone"],["address","Address","textarea"]],to:"list:clients"},
-companies:{t:"Company",f:[["name","Company name"],["tax","Tax / VAT number"],["email","Email","email"],["phone","Phone"],["address","Address","textarea"]],to:"list:companies"},
-requests:{t:"Quotation Request",f:[["client","Client","select",clientOpts],["details","What is requested","textarea"],["due","Due date","date"]],to:"req:all"}};
+users:{f:[["name","c_name"],["email","c_email","email"],["role","c_role","select",["Admin","Sales","Viewer"]]],to:"list:users"},
+products:{f:[["name","c_name"],["type","c_type","select",["Product","Service"]],["price","c_price","number"],["desc","c_desc","textarea"]],to:"list:products"},
+clients:{f:[["name","c_cname"],["contact","c_contact"],["email","c_email","email"],["phone","c_phone","tel"],["address","c_address","textarea"]],to:"list:clients"},
+companies:{f:[["name","c_coname"],["tax","c_tax"],["email","c_email","email"],["phone","c_phone","tel"],["address","c_address","textarea"]],to:"list:companies"},
+requests:{f:[["client","c_client","select",clientOpts],["details","c_details","textarea"],["due","c_due","date"]],to:"req:all"}};
 var L={users:["name","email","role"],products:["name","type","price","desc"],clients:["name","contact","email","phone"],companies:["name","tax","email","phone"]};
-function menu(){var h='<h1>Quotation Management</h1>';
-M.forEach(function(g){var o=g[0]===openG;h+='<div class="g'+(o?" open":"")+'"><button data-g="'+g[0]+'"><span>'+g[0]+'</span><span class="ar">›</span></button><div class="sub">';
-g[1].forEach(function(s){h+='<button data-v="'+s[1]+'" class="'+(view===s[1]?"on":"")+'">'+s[0]+'</button>'});h+='</div></div>'});
-h+='<div class="me">'+esc(S.users[0]?S.users[0].name:"")+'</div>';document.getElementById("side").innerHTML=h}
-document.getElementById("side").onclick=function(e){var b=e.target.closest("button");if(!b)return;
-if(b.dataset.g){openG=openG===b.dataset.g?"":b.dataset.g;menu()}else if(b.dataset.v){go(b.dataset.v);this.classList.remove("show")}};
-document.getElementById("mb").onclick=function(){document.getElementById("side").classList.toggle("show")};
-function go(v){view=v;menu();render()}
-function field(f){var n=f[0],t=f[2]||"text",o=f[3],h='<label>'+f[1]+'</label>';
-if(t==="textarea")return h+'<textarea name="'+n+'" rows="3"></textarea>';
-if(t==="select"){var a=typeof o==="function"?o():o;return h+'<select name="'+n+'">'+a.map(function(x){return'<option>'+esc(x)+'</option>'}).join("")+'</select>'}
-return h+'<input name="'+n+'" type="'+t+'" '+(n==="name"?"required":"")+'>'}
-function addForm(k){var c=F[k],h='<h2>Add '+c.t+'</h2><div class="card"><div class="grid">'+c.f.map(field).join("")+'</div><p><button class="btn" id="sv">Save</button></p></div>';
-if(k==="requests"&&!S.clients.length)h+='<p class="empty">Add a client first so you can pick one.</p>';
-v(h);document.getElementById("sv").onclick=function(){var r={},ok=true;
-c.f.forEach(function(f){var el=document.querySelector('[name="'+f[0]+'"]');r[f[0]]=el.value.trim();if(f[0]==="name"&&!r.name)ok=false});
-if(!ok){alert("Name is required.");return}
-if(k==="requests"){if(!r.client||!r.due){alert("Choose a client and a due date.");return}r.owner=S.users[0].name;r.status="Open";r.created=today}
-r.id=Date.now();S[k].push(r);save();go(c.to)}}
-function v(h){document.getElementById("v").innerHTML=h}
-function list(k){var cols=L[k],h='<h2>All '+F[k].t+'s</h2><div class="card wrap">';
-if(!S[k].length)h+='<div class="empty">Nothing here yet. Use the Add option in the menu.</div>';
-else h+='<table><tr>'+cols.map(function(c){return'<th>'+c+'</th>'}).join("")+'<th></th></tr>'+S[k].map(function(r){return'<tr>'+cols.map(function(c){return'<td>'+esc(r[c])+'</td>'}).join("")+'<td><button class="btn s o" data-del="'+r.id+'">Delete</button></td></tr>'}).join("")+'</table>';
-v(h+'</div>');document.getElementById("v").onclick=function(e){var d=e.target.dataset.del;if(d&&confirm("Delete this record?")){S[k]=S[k].filter(function(r){return String(r.id)!==d});save();render()}}}
+/* Text fields get dir="auto" so Arabic typing is right-to-left and Latin text stays left-to-right, whatever the UI language. */
+function field(f,val){var n=f[0],ty=f[2]||"text",o=f[3],x=val==null?"":val,h='<label>'+esc(t(f[1]))+'</label>';
+ if(ty==="textarea")return h+'<textarea name="'+n+'" rows="3" dir="auto">'+esc(x)+'</textarea>';
+ if(ty==="select"){var a=typeof o==="function"?o():o;return h+'<select name="'+n+'">'+a.map(function(y){return'<option value="'+esc(y)+'"'+(y===x?" selected":"")+'>'+esc(tv(y))+'</option>'}).join("")+'</select>'}
+ var ltr=ty!=="text";return h+'<input name="'+n+'" type="'+ty+'" value="'+esc(x)+'" dir="'+(ltr?"ltr":"auto")+'"'+(ty==="number"?' step="any" min="0"':"")+' autocomplete="off">'}
+function addForm(k,id){var c=F[k],rec=id?find(S[k],id):null;if(id&&!rec){go(c.to);return}
+ var h='<h2>'+esc(t((rec?"edit_":"add_")+k))+'</h2><div class="card"><div class="grid">'+c.f.map(function(f){return field(f,rec?rec[f[0]]:"")}).join("")+'</div><p><button class="btn" id="sv">'+esc(t("save"))+'</button> <button class="btn o" id="cn">'+esc(t("cancel"))+'</button></p></div>';
+ if(k==="requests"&&!S.clients.length)h+='<p class="empty">'+esc(t("add_client_first"))+'</p>';
+ v(h);$("cn").onclick=function(){go(c.to)};
+ $("sv").onclick=async function(){var r={},ok=true;
+  c.f.forEach(function(f){var el=document.querySelector('[name="'+f[0]+'"]');r[f[0]]=el.value.trim();if(f[0]==="name"&&!r.name)ok=false});
+  if(!ok){alert(t("name_req"));return}
+  if(k==="products")r.price=+r.price||0;
+  if(k==="requests"){if(!r.client||!r.due){alert(t("pick_client_due"));return}}
+  if(rec){var old=rec.name;
+   if(k==="clients"&&old!==r.name){S.quotations.forEach(function(q){if(q.client===old)q.client=r.name});S.requests.forEach(function(q){if(q.client===old)q.client=r.name})}
+   Object.assign(rec,r)}
+  else{if(k==="requests"){r.owner=S.users[0].name;r.status="Open";r.created=today}r.id=nextId();S[k].push(r)}
+  if(await save())go(c.to)}}
+function list(k){var cols=L[k],h='<h2>'+esc(t("list_"+k))+'</h2><div class="card wrap">';
+ if(!S[k].length)h+='<div class="empty">'+esc(t("empty"))+'</div>';
+ else h+='<table><tr>'+cols.map(function(c){return'<th>'+esc(t("c_"+c))+'</th>'}).join("")+'<th></th></tr>'+S[k].map(function(r){return'<tr>'+cols.map(function(c){
+  var x=r[c];if(c==="price")x=money(x);else if(c==="type"||c==="role")x=tv(x);return'<td>'+esc(x)+'</td>'}).join("")+
+  '<td><button class="btn s o" data-a="edit" data-k="'+k+'" data-id="'+r.id+'">'+esc(t("edit"))+'</button><button class="btn s o" data-a="del" data-k="'+k+'" data-id="'+r.id+'">'+esc(t("del"))+'</button></td></tr>'}).join("")+'</table>';
+ v(h+'</div>')}
+
+/* ================= requests ================= */
 function reqList(m){var rs=S.requests.filter(function(r){var od=r.status!=="Done"&&r.due<today;
-return m==="all"||(m==="my"&&r.owner===S.users[0].name)||(m==="overdue"&&od)});
-var t={all:"All Requests",my:"My Requests",overdue:"Overdue Requests"}[m],h='<h2>'+t+'</h2><div class="card wrap">';
-if(!rs.length)h+='<div class="empty">No requests to show.</div>';
-else h+='<table><tr><th>Client</th><th>Details</th><th>Due</th><th>Owner</th><th>Status</th><th></th></tr>'+rs.map(function(r){var od=r.status!=="Done"&&r.due<today;
-return'<tr><td>'+esc(r.client)+'</td><td>'+esc(r.details)+'</td><td>'+esc(r.due)+'</td><td>'+esc(r.owner)+'</td><td><span class="tag '+(od?"Overdue":r.status)+'">'+(od?"Overdue":r.status)+'</span></td><td>'+(r.status!=="Done"?'<button class="btn s g2" data-done="'+r.id+'">Mark done</button>':"")+'<button class="btn s o" data-q="'+r.id+'">Create quotation</button></td></tr>'}).join("")+'</table>';
-v(h+'</div>');document.getElementById("v").onclick=function(e){var d=e.target.dataset;
-if(d.done){S.requests.forEach(function(r){if(String(r.id)===d.done)r.status="Done"});save();render()}
-if(d.q){var r=S.requests.filter(function(x){return String(x.id)===d.q})[0];go("qform");document.querySelector('[name="client"]').value=r.client}}}
-function qform(){if(!S.clients.length||!S.products.length){v('<h2>Create Quotation</h2><div class="card empty">Add at least one client and one product / service first.</div>');return}
-var po=S.products.map(function(p,i){return'<option value="'+i+'">'+esc(p.name)+'</option>'}).join("");
-v('<h2>Create Quotation</h2><div class="card"><div class="grid"><div><label>Client</label><select name="client">'+S.clients.map(function(c){return'<option>'+esc(c.name)+'</option>'}).join("")+'</select></div><div><label>Valid until</label><input type="date" id="vu"></div><div><label>Tax %</label><input type="number" id="tx" value="14" min="0"></div></div>'+
-'<label>Items</label><div id="ls"></div><button class="btn o s" id="al">+ Add item</button><p><b>Total: <span id="tt">0.00</span></b></p><label>Notes</label><textarea id="nt" rows="2"></textarea><p><button class="btn" id="sv">Save quotation</button></p></div>');
-var ls=document.getElementById("ls");
-function calc(){var s=0;ls.querySelectorAll(".line").forEach(function(l){var i=l.querySelectorAll("input");s+=i[0].value*i[1].value});
-document.getElementById("tt").textContent=(s*(1+document.getElementById("tx").value/100)).toFixed(2)}
-function addLine(){var d=document.createElement("div");d.className="line";d.innerHTML='<select>'+po+'</select><input type="number" min="1" value="1"><input type="number" min="0" step="0.01"><button class="btn s o">✕</button>';
-var sel=d.querySelector("select"),pr=d.querySelectorAll("input")[1];pr.value=S.products[0].price||0;
-sel.onchange=function(){pr.value=S.products[sel.value].price||0;calc()};d.querySelector("button").onclick=function(){d.remove();calc()};ls.appendChild(d);calc()}
-ls.oninput=calc;document.getElementById("tx").oninput=calc;document.getElementById("al").onclick=addLine;addLine();
-document.getElementById("sv").onclick=function(){var items=[];ls.querySelectorAll(".line").forEach(function(l){var i=l.querySelectorAll("input");items.push({name:S.products[l.querySelector("select").value].name,qty:+i[0].value,price:+i[1].value})});
-if(!items.length){alert("Add at least one item.");return}
-var tax=+document.getElementById("tx").value,sub=items.reduce(function(a,i){return a+i.qty*i.price},0);
-S.quotations.push({id:Date.now(),no:"Q-"+String(S.quotations.length+1).padStart(3,"0"),client:document.querySelector('[name="client"]').value,date:today,valid:document.getElementById("vu").value,items:items,tax:tax,total:+(sub*(1+tax/100)).toFixed(2),notes:document.getElementById("nt").value,status:"New"});save();go("q:New")}}
-function qlist(st){var rs=S.quotations.filter(function(q){return st==="All"||q.status===st}),h='<h2>'+(st==="All"?"All Quotations":st==="Sent"?"Sent To Client":st+" Quotations")+'</h2><div class="card wrap">';
-if(!rs.length)h+='<div class="empty">No quotations here yet.</div>';
-else h+='<table><tr><th>No.</th><th>Client</th><th>Date</th><th>Items</th><th>Total</th><th>Status</th><th></th></tr>'+rs.map(function(q){var a="";
-if(q.status==="New")a='<button class="btn s" data-s="Sent" data-id="'+q.id+'">Send to client</button>';
-if(q.status==="Sent")a='<button class="btn s g2" data-s="Accepted" data-id="'+q.id+'">Accept</button><button class="btn s" data-s="Declined" data-id="'+q.id+'">Decline</button>';
-return'<tr><td>'+q.no+'</td><td>'+esc(q.client)+'</td><td>'+q.date+'</td><td>'+q.items.map(function(i){return esc(i.name)+" ×"+i.qty}).join(", ")+'</td><td>'+q.total.toFixed(2)+'</td><td><span class="tag '+q.status+'">'+q.status+(q.reason?" – "+esc(q.reason):"")+'</span></td><td>'+a+'<button class="btn s o" data-p="'+q.id+'">Print</button></td></tr>'}).join("")+'</table>';
-v(h+'</div>');document.getElementById("v").onclick=function(e){var d=e.target.dataset;
-if(d.s){var q=S.quotations.filter(function(x){return String(x.id)===d.id})[0];
-if(d.s==="Declined"){var r=prompt("Reason for decline (price, timing, competitor, other):");if(r===null)return;q.reason=r.trim()||"Unspecified"}
-q.status=d.s;save();render()}
-if(d.p){var q2=S.quotations.filter(function(x){return String(x.id)===d.p})[0],co=S.companies[0]||{name:""},w=window.open("","_blank");if(!w)return;
-w.document.write('<title>'+q2.no+'</title><body style="font-family:sans-serif;max-width:700px;margin:30px auto"><h1>'+esc(co.name)+'</h1><h2>Quotation '+q2.no+'</h2><p>Client: '+esc(q2.client)+'<br>Date: '+q2.date+'<br>Valid until: '+esc(q2.valid)+'</p><table border=1 cellpadding=6 style="border-collapse:collapse;width:100%"><tr><th>Item</th><th>Qty</th><th>Price</th></tr>'+q2.items.map(function(i){return'<tr><td>'+esc(i.name)+'</td><td>'+i.qty+'</td><td>'+i.price.toFixed(2)+'</td></tr>'}).join("")+'</table><p>Tax: '+q2.tax+'%</p><h3>Total: '+q2.total.toFixed(2)+'</h3><p>'+esc(q2.notes)+'</p>');w.document.close();w.print()}}}
+ return m==="all"||(m==="my"&&r.owner===S.users[0].name)||(m==="overdue"&&od)});
+ var h='<h2>'+esc(t({all:"m_req_all",my:"m_req_my",overdue:"m_req_overdue"}[m]))+'</h2><div class="card wrap">';
+ if(!rs.length)h+='<div class="empty">'+esc(t("no_req"))+'</div>';
+ else h+='<table><tr><th>'+esc(t("c_client"))+'</th><th>'+esc(t("c_details"))+'</th><th>'+esc(t("c_due"))+'</th><th>'+esc(t("c_owner"))+'</th><th>'+esc(t("th_status"))+'</th><th></th></tr>'+rs.map(function(r){var od=r.status!=="Done"&&r.due<today,st=od?"Overdue":r.status;
+ return'<tr><td>'+esc(r.client)+'</td><td>'+esc(r.details)+'</td><td>'+esc(r.due)+'</td><td>'+esc(r.owner)+'</td><td><span class="tag '+st+'">'+esc(tv(st))+'</span></td><td>'+(r.status!=="Done"?'<button class="btn s g2" data-a="done" data-id="'+r.id+'">'+esc(t("mark_done"))+'</button>':"")+'<button class="btn s o" data-a="mkq" data-id="'+r.id+'">'+esc(t("mk_q"))+'</button></td></tr>'}).join("")+'</table>';
+ v(h+'</div>')}
+
+/* ================= quotations ================= */
+function qform(){if(!S.clients.length||!S.products.length){v('<h2>'+esc(t("m_create_q"))+'</h2><div class="card empty">'+esc(t("need_data"))+'</div>');return}
+ var po=S.products.map(function(p,i){return'<option value="'+i+'">'+esc(p.name)+'</option>'}).join("");
+ var co=S.companies.length?'<div><label>'+esc(t("f_company"))+'</label><select name="company">'+S.companies.map(function(c){return'<option value="'+c.id+'">'+esc(c.name)+'</option>'}).join("")+'</select></div>':"";
+ v('<h2>'+esc(t("m_create_q"))+'</h2><div class="card"><div class="grid">'+co+'<div><label>'+esc(t("c_client"))+'</label><select name="client">'+S.clients.map(function(c){return'<option>'+esc(c.name)+'</option>'}).join("")+'</select></div><div><label>'+esc(t("valid_until"))+'</label><input type="date" id="vu" dir="ltr"></div><div><label>'+esc(t("tax_pct"))+'</label><input type="number" id="tx" value="14" min="0" step="any" dir="ltr"></div></div>'+
+ '<label>'+esc(t("items"))+'</label><div id="ls"></div><button class="btn o s" id="al">'+esc(t("add_item"))+'</button><p><b>'+esc(t("total"))+': <span id="tt">0.00</span></b></p><label>'+esc(t("notes"))+'</label><textarea id="nt" rows="2" dir="auto"></textarea><p><button class="btn" id="sv">'+esc(t("save_q"))+'</button></p></div>');
+ var ls=$("ls");
+ function calc(){var s=0;ls.querySelectorAll(".line").forEach(function(l){var i=l.querySelectorAll("input");s+=i[0].value*i[1].value});$("tt").textContent=money(s*(1+$("tx").value/100))}
+ function addLine(){var d=document.createElement("div");d.className="line";d.innerHTML='<select>'+po+'</select><input type="number" min="1" step="any" value="1" dir="ltr"><input type="number" min="0" step="0.01" dir="ltr"><button class="btn s o">✕</button>';
+  var sel=d.querySelector("select"),pr=d.querySelectorAll("input")[1];pr.value=S.products[0].price||0;
+  sel.onchange=function(){pr.value=S.products[sel.value].price||0;calc()};d.querySelector("button").onclick=function(){d.remove();calc()};ls.appendChild(d);calc()}
+ ls.oninput=calc;$("tx").oninput=calc;$("al").onclick=addLine;addLine();
+ $("sv").onclick=async function(){var items=[];ls.querySelectorAll(".line").forEach(function(l){var i=l.querySelectorAll("input"),p=S.products[l.querySelector("select").value];items.push({name:p.name,desc:p.desc||"",qty:+i[0].value||0,price:+i[1].value||0})});
+  items=items.filter(function(i){return i.qty>0});
+  if(!items.length){alert(t("need_item"));return}
+  var tax=+$("tx").value||0,sub=items.reduce(function(a,i){return a+i.qty*i.price},0),cs=document.querySelector('[name="company"]');
+  var n=S.quotations.reduce(function(m,q){return Math.max(m,parseInt(String(q.no).replace(/\D/g,""),10)||0)},0)+1;
+  S.quotations.push({id:nextId(),no:"Q-"+String(n).padStart(3,"0"),client:document.querySelector('[name="client"]').value,companyId:cs?cs.value:"",date:today,valid:$("vu").value,items:items,tax:tax,total:+(sub*(1+tax/100)).toFixed(2),notes:$("nt").value.trim(),status:"New"});
+  if(await save())go("q:New")}}
+function qlist(st){var rs=S.quotations.filter(function(q){return st==="All"||q.status===st}),
+ h='<h2>'+esc(t({All:"m_all_q",New:"m_new_q",Sent:"m_sent_q",Accepted:"m_accepted",Declined:"m_declined"}[st]))+'</h2><div class="card wrap">';
+ if(!rs.length)h+='<div class="empty">'+esc(t("no_q"))+'</div>';
+ else h+='<table><tr><th>'+esc(t("th_no"))+'</th><th>'+esc(t("c_client"))+'</th><th>'+esc(t("th_date"))+'</th><th>'+esc(t("items"))+'</th><th>'+esc(t("total"))+'</th><th>'+esc(t("th_status"))+'</th><th></th></tr>'+rs.map(function(q){var a="";
+ if(q.status==="New")a='<button class="btn s" data-a="st" data-s="Sent" data-id="'+q.id+'">'+esc(t("send_client"))+'</button>';
+ if(q.status==="Sent")a='<button class="btn s g2" data-a="st" data-s="Accepted" data-id="'+q.id+'">'+esc(t("accept"))+'</button><button class="btn s" data-a="st" data-s="Declined" data-id="'+q.id+'">'+esc(t("decline"))+'</button>';
+ return'<tr><td>'+esc(q.no)+'</td><td>'+esc(q.client)+'</td><td>'+esc(q.date)+'</td><td>'+q.items.map(function(i){return esc(i.name)+" ×"+i.qty}).join(lang==="ar"?"، ":", ")+'</td><td>'+money(q.total)+'</td><td><span class="tag '+q.status+'">'+esc(tv(q.status))+(q.reason?" – "+esc(q.reason):"")+'</span></td><td>'+a+'<button class="btn s o" data-a="view" data-id="'+q.id+'">'+esc(t("view"))+'</button></td></tr>'}).join("")+'</table>';
+ v(h+'</div>')}
 function analyze(){var d=S.quotations.filter(function(q){return q.status==="Declined"}),all=S.quotations.length,c={};
-d.forEach(function(q){c[q.reason||"Unspecified"]=(c[q.reason||"Unspecified"]||0)+1});
-var h='<h2>Analyze decline</h2><div class="card"><p>Declined: <b>'+d.length+'</b> of '+all+' quotations ('+(all?Math.round(d.length/all*100):0)+'%). Lost value: <b>'+d.reduce(function(a,q){return a+q.total},0).toFixed(2)+'</b></p>';
-var ks=Object.keys(c);if(!ks.length)h+='<div class="empty">No declined quotations yet.</div>';
-ks.sort(function(a,b){return c[b]-c[a]}).forEach(function(k){h+='<p>'+esc(k)+' – '+c[k]+'<div class="bar" style="width:'+Math.round(c[k]/d.length*100)+'%"></div></p>'});v(h+'</div>')}
+ d.forEach(function(q){var r=q.reason||t("unspecified");c[r]=(c[r]||0)+1});
+ var h='<h2>'+esc(t("m_analyze"))+'</h2><div class="card"><p>'+esc(t("declined_of",{d:d.length,a:all,p:all?Math.round(d.length/all*100):0,v:money(d.reduce(function(a,q){return a+q.total},0))}))+'</p>';
+ var ks=Object.keys(c);if(!ks.length)h+='<div class="empty">'+esc(t("no_declined"))+'</div>';
+ ks.sort(function(a,b){return c[b]-c[a]}).forEach(function(k){h+='<p>'+esc(k)+' – '+c[k]+'<div class="bar" style="width:'+Math.round(c[k]/d.length*100)+'%"></div></p>'});v(h+'</div>')}
+
+/* ================= quotation document (screen + PDF) ================= */
+var DOC={en:{title:"Quotation",no:"Quotation No.",date:"Date",valid:"Valid until",to:"Quotation for",item:"Item",qty:"Qty",price:"Unit price",total:"Total",sub:"Subtotal",tax:"Tax",grand:"Grand total",notes:"Notes",tel:"Tel",email:"Email",taxno:"Tax No.",att:"Attn"},
+ar:{title:"عرض سعر",no:"رقم العرض",date:"التاريخ",valid:"صالح حتى",to:"مقدم إلى",item:"الصنف",qty:"الكمية",price:"سعر الوحدة",total:"الإجمالي",sub:"المجموع الفرعي",tax:"الضريبة",grand:"الإجمالي النهائي",notes:"ملاحظات",tel:"هاتف",email:"البريد",taxno:"الرقم الضريبي",att:"عناية"}};
+function qdoc(q,dl){var D=DOC[dl],rtl=dl==="ar",co=find(S.companies,q.companyId)||S.companies[0]||{},cl=S.clients.filter(function(c){return c.name===q.client})[0]||{name:q.client};
+ var sub=q.items.reduce(function(a,i){return a+i.qty*i.price},0),tx=sub*q.tax/100;
+ function ln(l,x){return x?'<div>'+(l?'<span class="k">'+esc(l)+':</span> ':"")+'<span dir="auto">'+esc(x)+'</span></div>':""}
+ var rows=q.items.map(function(i,n){return'<tr><td class="c">'+(n+1)+'</td><td><b dir="auto">'+esc(i.name)+'</b>'+(i.desc?'<div class="d" dir="auto">'+esc(i.desc)+'</div>':"")+'</td><td class="c">'+i.qty+'</td><td class="e">'+money(i.price)+'</td><td class="e">'+money(i.qty*i.price)+'</td></tr>'}).join("");
+ return'<!DOCTYPE html><html lang="'+dl+'" dir="'+(rtl?"rtl":"ltr")+'"><head><meta charset="utf-8"><title>'+esc(q.no)+'</title><style>'+
+ '@page{size:A4;margin:14mm}*{box-sizing:border-box}body{margin:0;padding:22px;font:14px/1.6 "Segoe UI",Tahoma,"Noto Naskh Arabic","Noto Sans Arabic",Arial,sans-serif;color:#1b1d2a;background:#fff}'+
+ '.h{display:flex;justify-content:space-between;gap:20px;border-bottom:3px solid #ef3e4f;padding-bottom:12px;margin-bottom:16px}.h h1{margin:0 0 4px;font-size:24px}.t{text-align:end}.t h2{margin:0;font-size:22px;color:#ef3e4f}'+
+ '.k{color:#6b6f85}.box{border:1px solid #e1e3ec;border-radius:8px;padding:10px 14px;margin-bottom:16px}.box b.n{font-size:16px}'+
+ 'table{border-collapse:collapse;width:100%}th{background:#15162b;color:#fff;padding:8px 10px;text-align:start;font-size:13px}td{padding:8px 10px;border-bottom:1px solid #e1e3ec;vertical-align:top}'+
+ '.c{text-align:center;width:60px}.e{text-align:end;white-space:nowrap}.d{color:#6b6f85;font-size:12px}tr{page-break-inside:avoid}'+
+ '.s{margin-top:14px;margin-inline-start:auto;width:300px}.s div{display:flex;justify-content:space-between;padding:5px 0}.s .g{border-top:2px solid #15162b;font-size:17px;font-weight:700;margin-top:4px;padding-top:8px}'+
+ '.nt{margin-top:20px;white-space:pre-wrap}</style></head><body>'+
+ '<div class="h"><div><h1 dir="auto">'+esc(co.name||"")+'</h1>'+ln(D.taxno,co.tax)+ln(D.tel,co.phone)+ln(D.email,co.email)+ln("",co.address)+'</div>'+
+ '<div class="t"><h2>'+esc(D.title)+'</h2><div><span class="k">'+esc(D.no)+':</span> <b>'+esc(q.no)+'</b></div><div><span class="k">'+esc(D.date)+':</span> '+esc(q.date)+'</div>'+(q.valid?'<div><span class="k">'+esc(D.valid)+':</span> '+esc(q.valid)+'</div>':"")+'</div></div>'+
+ '<div class="box"><div class="k">'+esc(D.to)+'</div><b class="n" dir="auto">'+esc(cl.name)+'</b>'+ln(D.att,cl.contact)+ln(D.tel,cl.phone)+ln(D.email,cl.email)+ln("",cl.address)+'</div>'+
+ '<table><tr><th class="c">#</th><th>'+esc(D.item)+'</th><th class="c">'+esc(D.qty)+'</th><th class="e">'+esc(D.price)+'</th><th class="e">'+esc(D.total)+'</th></tr>'+rows+'</table>'+
+ '<div class="s"><div><span>'+esc(D.sub)+'</span><span>'+money(sub)+'</span></div><div><span>'+esc(D.tax)+' ('+q.tax+'%)</span><span>'+money(tx)+'</span></div><div class="g"><span>'+esc(D.grand)+'</span><span>'+money(sub+tx)+'</span></div></div>'+
+ (q.notes?'<div class="nt"><b>'+esc(D.notes)+':</b><div dir="auto">'+esc(q.notes)+'</div></div>':"")+'</body></html>'}
+function qview(id){var q=find(S.quotations,id);if(!q){go("q:All");return}
+ v('<h2>'+esc(q.no)+' – '+esc(q.client)+'</h2><div class="bt"><button class="btn o" data-a="back">'+esc(t("back"))+'</button><button class="btn o" data-a="print">'+esc(t("print"))+'</button><button class="btn" data-a="pdf" data-id="'+q.id+'">'+esc(t("pdf"))+'</button><button class="btn g2" data-a="wa" data-id="'+q.id+'">'+esc(t("wa"))+'</button>'+
+ '<label style="margin:0">'+esc(t("doc_lang"))+'</label><select id="dl"><option value="ar"'+(docLang==="ar"?" selected":"")+'>'+esc(t("lang_ar"))+'</option><option value="en"'+(docLang==="en"?" selected":"")+'>'+esc(t("lang_en"))+'</option></select></div>'+
+ '<iframe id="fr" style="width:100%;height:1150px;border:1px solid var(--bd);border-radius:8px;background:#fff"></iframe>');
+ $("fr").srcdoc=qdoc(q,docLang);$("dl").onchange=function(){docLang=this.value;qview(id)}}
+async function exportPdf(q,ask){if(!window.api){toast(t("desktop_only"));return null}
+ try{return await api.savePdf({html:qdoc(q,docLang),name:q.no+" - "+q.client,ask:ask})}catch(e){alert(String(e.message||e));return null}}
+async function sendWA(q){if(!window.api){toast(t("desktop_only"));return}
+ var cl=S.clients.filter(function(c){return c.name===q.client})[0],ph=cl&&cl.phone||"";
+ if(!ph){ph=prompt(t("enter_phone"),"")||"";if(!ph)return}
+ var num=waNumber(ph);if(!num){alert(t("bad_phone"));return}
+ if(cl&&!cl.phone){cl.phone=ph.trim();save()}
+ var p=await exportPdf(q,false);if(!p)return;
+ var co=find(S.companies,q.companyId)||S.companies[0]||{};
+ var text=(docLang==="ar"?T.ar:T.en).wa_msg.replace("{c}",q.client).replace("{n}",q.no).replace("{t}",money(q.total)).replace("{co}",co.name||"");
+ await api.showFile(p);await api.openWhatsApp({phone:num,text:text});toast(t("wa_done",{p:p}))}
+
+/* ================= Excel import ================= */
+var IMP=null;
+/* header aliases (Arabic + English); normalised with nz() below */
+var AL={
+clients:{name:["name","client","clientname","customer","customername","company","companyname","الاسم","اسم","العميل","عميل","اسم العميل","الزبون","اسم الزبون","العملاء","اسم الشركة"],
+ contact:["contact","contact person","person","مسؤول","المسؤول","الشخص المسؤول","جهة الاتصال","مسئول","المسئول","مسؤول التواصل"],
+ email:["email","e-mail","mail","البريد","البريد الالكتروني","ايميل","الايميل","الإيميل","بريد"],
+ phone:["phone","mobile","tel","telephone","cell","whatsapp","الهاتف","هاتف","التليفون","تليفون","الموبايل","موبايل","المحمول","محمول","رقم الهاتف","رقم الموبايل","رقم التليفون","واتساب","رقم الجوال","جوال"],
+ address:["address","location","city","العنوان","عنوان","المدينة","الموقع"]},
+products:{name:["name","item","item name","product","product name","service","الصنف","اسم الصنف","صنف","الاسم","اسم","المنتج","اسم المنتج","منتج","الخدمة","خدمة","البيان","اسم الخدمة"],
+ type:["type","category","kind","النوع","نوع","التصنيف","الفئة","فئة"],
+ price:["price","unit price","unitprice","cost","rate","selling price","amount","السعر","سعر","سعر الوحدة","سعر البيع","التكلفة","القيمة","سعر الوحده"],
+ desc:["desc","description","details","notes","note","الوصف","وصف","تفاصيل","ملاحظات","التفاصيل"]}};
+function nz(s){return digits(String(s==null?"":s)).toLowerCase().replace(/[ً-ٰٟـ]/g,"").replace(/[أإآٱ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/[^a-z0-9ء-ي]/g,"")}
+var ALN={};Object.keys(AL).forEach(function(k){ALN[k]={};Object.keys(AL[k]).forEach(function(f){ALN[k][f]=AL[k][f].map(nz)})});
+function fields(k){return Object.keys(AL[k])}
+function isNum(x){return typeof x==="number"?isFinite(x):/^[\s]*[-+]?[\d٠-٩][\d٠-٩,٬.٫\s]*$/.test(String(x))&&String(x).trim()!==""}
+function toNum(x){if(typeof x==="number")return isFinite(x)?x:0;var s=digits(String(x)).replace(/[٬,\s]/g,"").replace(/٫/g,".").replace(/[^0-9.\-]/g,"");var n=parseFloat(s);return isNaN(n)?0:n}
+function headerScore(row,k){var s=0;row.forEach(function(c){var h=nz(c);if(!h)return;var hit=fields(k).some(function(f){return ALN[k][f].some(function(a){return a===h})});if(hit)s++});return s}
+function detectHeader(rows,k){var best=-1,bs=0;for(var i=0;i<Math.min(10,rows.length);i++){var s=headerScore(rows[i],k);if(s>bs){bs=s;best=i}}return best}
+/* map each field to a column: exact header match, then partial match, then guess from the cell contents */
+function detectMap(rows,k,hrow,start){var map={},used={},ncol=rows.reduce(function(m,r){return Math.max(m,r.length)},0),hdr=hrow>=0?rows[hrow].map(nz):[];
+ fields(k).forEach(function(f){map[f]=-1});
+ function assign(f,c){map[f]=c;used[c]=1}
+ if(hdr.length){
+  fields(k).forEach(function(f){if(map[f]>=0)return;for(var c=0;c<ncol;c++){if(!used[c]&&hdr[c]&&ALN[k][f].indexOf(hdr[c])>=0){assign(f,c);return}}});
+  fields(k).forEach(function(f){if(map[f]>=0)return;for(var c=0;c<ncol;c++){if(used[c]||!hdr[c]||hdr[c].length<3)continue;
+   if(ALN[k][f].some(function(a){return a.length>=3&&(hdr[c].indexOf(a)>=0||a.indexOf(hdr[c])>=0)})){assign(f,c);return}}})}
+ var data=rows.slice(start,start+30);
+ function share(c,fn){var n=0,m=0;data.forEach(function(r){var x=r[c];if(x===""||x==null)return;n++;if(fn(x))m++});return n?m/n:0}
+ function guess(f,fn){if(map[f]>=0)return;var bc=-1,bs=.6;for(var c=0;c<ncol;c++){if(used[c])continue;var s=share(c,fn);if(s>bs){bs=s;bc=c}}if(bc>=0)assign(f,bc)}
+ if(k==="clients"){guess("email",function(x){return/@/.test(String(x))});guess("phone",function(x){var d=digits(String(x)).replace(/[\s\-()+]/g,"");return/^\d{8,15}$/.test(d)})}
+ if(k==="products"){guess("price",isNum)}
+ if(map.name<0){for(var c=0;c<ncol;c++){if(!used[c]&&share(c,function(x){return typeof x==="string"&&!isNum(x)})>.6){assign("name",c);break}}}
+ return map}
+function impPrep(){var rows=IMP.sheets[IMP.si].rows;IMP.rows=rows;var h=detectHeader(rows,IMP.k);IMP.hdr=h>=0;IMP.hrow=h>=0?h:0;IMP.map=detectMap(rows,IMP.k,h,h>=0?h+1:0)}
+function impRemap(){var h=IMP.hdr?IMP.hrow:-1;IMP.map=detectMap(IMP.rows,IMP.k,h,IMP.hdr?IMP.hrow+1:0)}
+function colName(i){var s="",n=i+1;while(n>0){var r=(n-1)%26;s=String.fromCharCode(65+r)+s;n=Math.floor((n-1)/26)}return s}
+function impRecords(){var k=IMP.k,m=IMP.map,start=IMP.hdr?IMP.hrow+1:0,out=[],blank=0;
+ IMP.rows.slice(start).forEach(function(r){
+  function g(f){var c=m[f];return c>=0&&r[c]!=null?r[c]:""}
+  var name=String(g("name")).trim();if(!name){if(r.some(function(x){return String(x).trim()!==""}))blank++;return}
+  var o={name:name};
+  if(k==="clients"){o.contact=String(g("contact")).trim();o.email=String(g("email")).trim().toLowerCase();var ph=g("phone");
+   /* Excel drops the leading zero of Egyptian mobile numbers stored as numbers */
+   o.phone=(typeof ph==="number"&&String(ph).length===10&&String(ph).charAt(0)==="1"&&(S.settings.cc||"20")==="20")?"0"+ph:String(ph==null?"":ph).trim();o.address=String(g("address")).trim()}
+  else{o.type=/service|خدم/i.test(String(g("type")))?"Service":"Product";o.price=toNum(g("price"));o.desc=String(g("desc")).trim()}
+  out.push(o)});
+ return{recs:out,blank:blank}}
+function impView(k){
+ var h='<h2>'+esc(t("imp_title_"+k))+'</h2><div class="card"><p class="mu">'+esc(t("imp_hint"))+'</p><button class="btn" data-a="imp-pick">'+esc(IMP&&IMP.k===k&&IMP.sheets?t("imp_change"):t("imp_choose"))+'</button>';
+ if(IMP&&IMP.k===k&&IMP.sheets){
+  var sh=IMP.sheets[IMP.si],ncol=IMP.rows.reduce(function(m,r){return Math.max(m,r.length)},0),hdrRow=IMP.rows[IMP.hrow]||[];
+  h+=' <span class="mu" dir="auto">'+esc(IMP.file)+'</span>';
+  if(IMP.sheets.length>1)h+='<div class="bt" style="margin-top:12px"><label style="margin:0">'+esc(t("imp_sheet"))+'</label><select id="isheet">'+IMP.sheets.map(function(s,i){return'<option value="'+i+'"'+(i===IMP.si?" selected":"")+'>'+esc(s.name)+'</option>'}).join("")+'</select></div>';
+  h+='<p><label style="display:inline-flex;gap:6px;align-items:center;margin:12px 0 0"><input type="checkbox" id="ihdr"'+(IMP.hdr?" checked":"")+'> '+esc(t("imp_hdr"))+'</label></p>';
+  h+='<h3>'+esc(t("imp_map"))+'</h3><div class="grid">'+fields(k).map(function(f){
+   var lab=k==="clients"?{name:"c_cname",contact:"c_contact",email:"c_email",phone:"c_phone",address:"c_address"}[f]:{name:"c_name",type:"c_type",price:"c_price",desc:"c_desc"}[f];
+   var o='<option value="-1">'+esc(t("imp_ignore"))+'</option>';
+   for(var c=0;c<ncol;c++){var nm=IMP.hdr&&hdrRow[c]!==""&&hdrRow[c]!=null?String(hdrRow[c]):"";o+='<option value="'+c+'"'+(IMP.map[f]===c?" selected":"")+'>'+esc(colName(c)+(nm?" – "+nm:""))+'</option>'}
+   return'<div><label>'+esc(t(lab))+'</label><select data-map="'+f+'">'+o+'</select></div>'}).join("")+'</div>';
+  if(IMP.map.name<0)h+='<p class="empty">'+esc(t("imp_name_needed"))+'</p>';
+  else{var r=impRecords(),cols=fields(k);
+   h+='<h3>'+esc(t("imp_preview"))+'</h3><p class="mu">'+esc(t("imp_rows",{n:r.recs.length,b:r.blank}))+'</p>';
+   if(!r.recs.length)h+='<div class="empty">'+esc(t("imp_empty"))+'</div>';
+   else{h+='<div class="wrap"><table><tr>'+cols.map(function(c){return'<th>'+esc(t(c==="name"&&k==="clients"?"c_cname":"c_"+c))+'</th>'}).join("")+'</tr>'+r.recs.slice(0,8).map(function(x){return'<tr>'+cols.map(function(c){var y=x[c];if(c==="price")y=money(y);else if(c==="type")y=tv(y);return'<td>'+esc(y)+'</td>'}).join("")+'</tr>'}).join("")+'</table></div>';
+    h+='<div class="bt" style="margin-top:14px"><label style="margin:0">'+esc(t("imp_dup"))+'</label><select id="idup"><option value="update"'+(IMP.dup==="update"?" selected":"")+'>'+esc(t("imp_update"))+'</option><option value="skip"'+(IMP.dup==="skip"?" selected":"")+'>'+esc(t("imp_skip"))+'</option></select><button class="btn" data-a="imp-go">'+esc(t("imp_go",{n:r.recs.length}))+'</button></div>'}}}
+ if(IMP&&IMP.k===k&&IMP.msg)h+='<p class="ok">'+esc(IMP.msg)+'</p>';
+ v(h+'</div>');
+ var sh2=$("isheet");if(sh2)sh2.onchange=function(){IMP.si=+this.value;impPrep();impView(k)};
+ var hc=$("ihdr");if(hc)hc.onchange=function(){IMP.hdr=this.checked;impRemap();impView(k)};
+ var dp=$("idup");if(dp)dp.onchange=function(){IMP.dup=this.value};
+ document.querySelectorAll("[data-map]").forEach(function(s){s.onchange=function(){IMP.map[this.dataset.map]=+this.value;impView(k)}})}
+async function impPick(k){if(!window.api){toast(t("desktop_only"));return}
+ var r=await api.pickExcel();if(!r)return;if(r.error){alert(t("imp_err",{e:r.error}));return}
+ var sheets=r.sheets.filter(function(s){return s.rows.length});if(!sheets.length){alert(t("imp_empty"));return}
+ IMP={k:k,file:r.name,sheets:sheets,si:0,dup:"update",msg:""};impPrep();impView(k)}
+async function impGo(){var k=IMP.k,r=impRecords(),a=0,u=0,s=r.blank,arr=S[k],idx={};
+ arr.forEach(function(x){idx[nz(x.name)]=x});
+ r.recs.forEach(function(o){var ex=idx[nz(o.name)];
+  if(ex){if(IMP.dup==="skip"){s++;return}
+   /* update only the columns that were mapped, and never blank out existing data with empty cells */
+   Object.keys(o).forEach(function(f){if(f==="name"||IMP.map[f]<0)return;if(f==="price"?o[f]>0:o[f]!=="")ex[f]=o[f]});u++}
+  else{o.id=nextId();arr.push(o);idx[nz(o.name)]=o;a++}});
+ if(await save()){IMP.msg=t("imp_done",{a:a,u:u,s:s});impView(k)}}
+
+/* ================= settings ================= */
+async function settings(){
+ v('<h2>'+esc(t("m_settings"))+'</h2><div class="card"><div class="grid"><div><label>'+esc(t("s_lang"))+'</label><select id="sl"><option value="ar"'+(lang==="ar"?" selected":"")+'>العربية</option><option value="en"'+(lang==="en"?" selected":"")+'>English</option></select></div>'+
+ '<div><label>'+esc(t("s_cc"))+'</label><input id="scc" dir="ltr" value="'+esc(S.settings.cc)+'"></div></div><p><button class="btn" id="ssv">'+esc(t("save"))+'</button></p></div><div class="card" id="dev"></div>');
+ $("sl").onchange=function(){setLang(this.value)};
+ $("ssv").onclick=async function(){S.settings.cc=digits($("scc").value).replace(/\D/g,"")||"20";if(await save())toast(t("s_saved"))};
+ var d=$("dev"),h='<h3 style="margin-top:0">'+esc(t("s_device"))+'</h3>';
+ if(!window.api){d.innerHTML=h+'<p class="mu">'+esc(t("s_browser"))+'</p>';return}
+ var i=await api.info();
+ if(i.mode==="server")h+='<p>'+esc(t("s_server"))+'</p><p class="mono">'+(i.ips.length?i.ips.map(function(a){return esc(a+":"+i.port)}).join("<br>"):esc("127.0.0.1:"+i.port))+'</p><p class="mu">'+esc(t("s_data"))+' <span class="mono">'+esc(i.dataFile)+'</span></p>';
+ else if(i.mode==="terminal")h+='<p>'+esc(t("s_terminal"))+'</p><p class="mono">'+esc(i.host+":"+i.port)+'</p>';
+ d.innerHTML=h+'<button class="btn o" id="chg">'+esc(t("s_change"))+'</button>';$("chg").onclick=function(){api.openSetup()}}
+
+/* ================= actions + routing ================= */
+$("v").onclick=async function(e){var b=e.target.closest("[data-a]");if(!b)return;var d=b.dataset;
+ if(d.a==="edit")go("edit:"+d.k+":"+d.id);
+ else if(d.a==="del"){if(!confirm(t("confirm_del")))return;S[d.k]=S[d.k].filter(function(r){return String(r.id)!==d.id});if(await save())render()}
+ else if(d.a==="done"){var r=find(S.requests,d.id);if(r){r.status="Done";if(await save())render()}}
+ else if(d.a==="mkq"){var rq=find(S.requests,d.id);go("qform");var sel=document.querySelector('[name="client"]');if(sel&&rq)sel.value=rq.client}
+ else if(d.a==="st"){var q=find(S.quotations,d.id);if(!q)return;
+  if(d.s==="Declined"){var why=prompt(t("decline_prompt"));if(why===null)return;q.reason=why.trim()||t("unspecified")}
+  q.status=d.s;if(await save())render()}
+ else if(d.a==="view")go("qv:"+d.id);
+ else if(d.a==="back")go("q:All");
+ else if(d.a==="print"){var f=$("fr");if(f){f.contentWindow.focus();f.contentWindow.print()}}
+ else if(d.a==="pdf"){var q1=find(S.quotations,d.id),p=q1&&await exportPdf(q1,true);if(p){toast(t("pdf_done",{p:p}));if(window.api)api.showFile(p)}}
+ else if(d.a==="wa"){var q2=find(S.quotations,d.id);if(q2)sendWA(q2)}
+ else if(d.a==="imp-pick")impPick(view.split(":")[1]);
+ else if(d.a==="imp-go")impGo()};
 function render(){var p=view.split(":"),a=p[0],b=p[1];
-if(view==="qform")qform();else if(a==="q")qlist(b);else if(view==="analyze")analyze();else if(a==="add")addForm(b);else if(a==="list")list(b);else if(a==="req")reqList(b)}
-menu();render();
+ editing=a==="add"||a==="edit"||a==="imp"||a==="qform"||a==="settings";
+ if(view==="qform")qform();else if(a==="q")qlist(b);else if(a==="qv")qview(b);else if(view==="analyze")analyze();else if(a==="add")addForm(b);else if(a==="edit")addForm(b,p[2]);
+ else if(a==="list")list(b);else if(a==="req")reqList(b);else if(a==="imp")impView(b);else if(a==="settings")settings()}
+(async function boot(){
+ applyLang();
+ try{await load()}catch(e){document.body.innerHTML='<p style="padding:30px">'+esc(t("conn_err"))+'</p>';return}
+ menu();render();setInterval(poll,6000)})();
 </script></body></html>

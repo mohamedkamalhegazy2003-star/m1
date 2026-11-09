@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Setup / الإعداد</title>
+<style>
+:root{--bg:#f4f5f9;--card:#fff;--tx:#1b1d2a;--mu:#6b6f85;--bd:#e1e3ec;--ac:#ef3e4f}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1020;--card:#191a30;--tx:#eceefa;--mu:#9a9db8;--bd:#2c2e4d}}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.6 "Segoe UI",Tahoma,system-ui,sans-serif;background:var(--bg);color:var(--tx);padding:30px 16px}
+.w{max-width:760px;margin:0 auto}
+h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mu);margin:0 0 20px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:18px;margin-bottom:16px}
+.card h2{margin:0 0 4px;font-size:17px}.card p{margin:0 0 8px;color:var(--mu);font-size:13px}
+label{display:block;font-size:13px;color:var(--mu);margin:10px 0 4px}
+input{width:100%;padding:9px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);font:inherit;direction:ltr;text-align:left}
+.btn{margin-top:14px;background:var(--ac);color:#fff;border:0;border-radius:7px;padding:9px 18px;font:inherit;font-weight:600;cursor:pointer}
+.err{background:#fcdadd;color:#a3182a;border-radius:8px;padding:10px 12px;margin-bottom:16px;direction:ltr;text-align:left;word-break:break-all}
+.ips{direction:ltr;text-align:left;font-family:Consolas,monospace;font-size:13px;color:var(--mu)}
+.row{display:grid;grid-template-columns:2fr 1fr;gap:10px}
+</style></head><body><div class="w">
+<h1>اختر وضع تشغيل الجهاز · Choose this device's mode</h1>
+<p class="sub">يُضبط مرة واحدة ويمكن تغييره من الإعدادات · Set once, changeable later from Settings</p>
+<div id="err"></div>
+
+<div class="card">
+<h2>جهاز السيرفر (الجهاز الرئيسي) · Server (main device)</h2>
+<p>تُحفظ عليه كل البيانات، وتتصل به الأجهزة الطرفية على نفس الشبكة. · Holds all the data; terminals on the same network connect to it.</p>
+<label>المنفذ · Port</label><input id="sp" type="number" value="3210" min="1" max="65535">
+<div class="ips" id="ips"></div>
+<button class="btn" id="bs">تشغيل كسيرفر · Run as server</button>
+</div>
+
+<div class="card">
+<h2>جهاز طرفي (مخزن) · Terminal (store)</h2>
+<p>يتصل بجهاز السيرفر ويعمل على نفس البيانات. · Connects to the server device and works on the same data.</p>
+<div class="row"><div><label>عنوان السيرفر (IP) · Server address (IP)</label><input id="th" placeholder="192.168.1.10"></div>
+<div><label>المنفذ · Port</label><input id="tp" type="number" value="3210" min="1" max="65535"></div></div>
+<button class="btn" id="bt">اتصال بالسيرفر · Connect to server</button>
+</div>
+</div>
+<script>
+var $=function(i){return document.getElementById(i)};
+var q=new URLSearchParams(location.search).get("error");
+if(q){var d=document.createElement("div");d.className="err";d.textContent=q;$("err").appendChild(d)}
+if(window.api){api.info().then(function(i){
+ if(i.port){$("sp").value=i.port;$("tp").value=i.port}
+ if(i.host)$("th").value=i.host;
+ if(i.ips&&i.ips.length)$("ips").textContent="Server address for terminals: "+i.ips.map(function(a){return a+":"+$("sp").value}).join("   |   ");
+})}
+function go(c){api.setConfig(c).then(function(r){if(r&&!r.ok)alert(r.error==="host"?"أدخل عنوان السيرفر · Enter the server address":"Invalid / غير صالح")})}
+$("bs").onclick=function(){go({mode:"server",port:$("sp").value})};
+$("bt").onclick=function(){go({mode:"terminal",host:$("th").value,port:$("tp").value})};
+</script></body></html>

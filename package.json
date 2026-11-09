@@ -1,6 +1,6 @@
 {
   "name": "quotation-management",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Quotation Management desktop app",
   "main": "main.js",
   "author": "Your Name",
@@ -16,13 +16,24 @@
   "build": {
     "appId": "com.example.quotationmanagement",
     "productName": "Quotation Management",
-    "files": ["main.js", "app/**"],
-    "directories": { "output": "dist" },
-    "win": { "target": "nsis" },
+    "files": [
+      "main.js",
+      "preload.js",
+      "app/**"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis"
+    },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true
     }
+  },
+  "dependencies": {
+    "xlsx": "0.18.5"
   }
 }
