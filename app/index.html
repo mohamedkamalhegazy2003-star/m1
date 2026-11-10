@@ -56,6 +56,8 @@ body.lo aside,body.lo main{display:none}
 .paper{background:var(--bd);padding:16px;border-radius:8px;overflow:auto}.paper iframe{display:block;width:210mm;max-width:none;margin:0 auto;border:0;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.35)}
 .paper.sm iframe{zoom:.62}.te{display:grid;grid-template-columns:minmax(260px,340px) 1fr;gap:16px;align-items:start}.te .grid{grid-template-columns:1fr}
 @media(max-width:1100px){.te{grid-template-columns:1fr}}
+.cb2{position:relative}.cbl{position:absolute;inset-inline:0;top:calc(100% + 2px);z-index:30;max-height:260px;overflow:auto;background:var(--card);border:1px solid var(--bd);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.25)}.cbl[hidden]{display:none}
+.cbo{display:flex;justify-content:space-between;gap:10px;padding:8px 10px;cursor:pointer;font-size:14px}.cbo small{color:var(--mu);white-space:nowrap}.cbo.on,.cbo:hover{background:var(--ac);color:#fff}.cbo.on small,.cbo:hover small{color:#fff}.cbe{padding:10px;color:var(--mu);font-size:14px}
 #toast{position:fixed;bottom:20px;inset-inline-start:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:8px;max-width:90vw;display:none;z-index:20;font-size:14px}
 #mb{display:none}
 @media(max-width:760px){body{display:block}aside{position:fixed;z-index:5;left:0;top:0;transform:translateX(-100%);transition:transform .2s;padding-top:calc(20px + env(safe-area-inset-top,0px))}
@@ -109,7 +111,7 @@ tab_new:"New quotation",tab_close:"Close tab",confirm_close:"This tab has unsave
 tpl_title:"Quotation templates and design",tpl_hint:"Choose the default template used for printing and PDF, or edit a design. All templates print in black and white only.",tpl_name:"Template name",tpl_default:"Default",tpl_use:"Use as default",tpl_edit:"Edit design",tpl_dup:"Duplicate",tpl_del:"Delete",tpl_reset:"Restore original design",tpl_copy:"copy",tpl_saved:"Template saved.",confirm_del_tpl:"Delete this template?",preview:"Preview",
 d_title_ar:"Document title (Arabic)",d_title_en:"Document title (English)",d_head:"Header style",d_table:"Items table style",d_font:"Font size",d_margin:"Page margin (mm)",d_numbering:"Row numbers",d_desc:"Item descriptions",d_taxno:"Company tax number",d_valid:"Validity date",d_clientbox:"Client details in a box",d_sign:"Signature boxes",d_stamp:"Stamp box",d_terms_ar:"Terms and conditions - Arabic (one per line)",d_terms_en:"Terms and conditions - English (one per line)",d_footer:"Footer line",
 o_boxed:"Boxed",o_lined:"Underlined",o_centered:"Centered",o_grid:"Full grid",o_lines:"Horizontal lines",o_double:"Double border",s_item1:"Sample item",s_item2:"Another item",s_desc:"Item description",s_client:"Sample client",
-doc_title:"Quotation",lang_btn:"العربية"
+search_ph:"Type to search...",no_match:"No matches",doc_title:"Quotation",lang_btn:"العربية"
 },ar:{
 app_title:"إدارة عروض الأسعار",
 g_quotations:"عروض الأسعار",g_users:"المستخدمون",g_products:"الأصناف / الخدمات",g_clients:"العملاء",g_admin:"الإدارة",g_requests:"طلبات عروض الأسعار",
@@ -151,7 +153,7 @@ tab_new:"عرض جديد",tab_close:"إغلاق التبويب",confirm_close:"�
 tpl_title:"نماذج عروض الأسعار والتصميم",tpl_hint:"اختر النموذج الافتراضي للطباعة وملف PDF، أو عدّل التصميم. كل النماذج تُطبع بالأبيض والأسود فقط.",tpl_name:"اسم النموذج",tpl_default:"الافتراضي",tpl_use:"اجعله الافتراضي",tpl_edit:"تعديل التصميم",tpl_dup:"نسخ",tpl_del:"حذف",tpl_reset:"استعادة التصميم الأصلي",tpl_copy:"نسخة",tpl_saved:"تم حفظ النموذج.",confirm_del_tpl:"هل تريد حذف هذا النموذج؟",preview:"معاينة",
 d_title_ar:"عنوان المستند (عربي)",d_title_en:"عنوان المستند (إنجليزي)",d_head:"شكل الترويسة",d_table:"شكل جدول الأصناف",d_font:"حجم الخط",d_margin:"هوامش الصفحة (مم)",d_numbering:"ترقيم الصفوف",d_desc:"وصف الأصناف",d_taxno:"الرقم الضريبي للشركة",d_valid:"تاريخ الصلاحية",d_clientbox:"بيانات العميل داخل إطار",d_sign:"خانات التوقيع",d_stamp:"خانة الختم",d_terms_ar:"الشروط والأحكام - عربي (كل شرط في سطر)",d_terms_en:"الشروط والأحكام - إنجليزي (كل شرط في سطر)",d_footer:"سطر أسفل الصفحة",
 o_boxed:"داخل إطار",o_lined:"بخط سفلي",o_centered:"في المنتصف",o_grid:"شبكة كاملة",o_lines:"خطوط أفقية",o_double:"إطار مزدوج",s_item1:"صنف تجريبي",s_item2:"صنف آخر",s_desc:"وصف الصنف",s_client:"عميل تجريبي",
-doc_title:"عرض سعر",lang_btn:"English"
+search_ph:"اكتب للبحث...",no_match:"لا توجد نتائج",doc_title:"عرض سعر",lang_btn:"English"
 }};
 var lang=(function(){try{return localStorage.getItem("qm-lang")||"ar"}catch(e){return"ar"}})();
 function t(k,o){var s=(T[lang]&&T[lang][k])||T.en[k]||k;if(o)for(var x in o)s=s.split("{"+x+"}").join(o[x]);return s}
@@ -176,7 +178,8 @@ function errMsg(j){j=j||{};if(j.error==="locked")return t("err_locked",{s:j.wait
 async function load(){
  if(REMOTE){var r=await net("GET","/api/state");if(!r.ok)throw new Error(r.status===401?"auth":"HTTP "+r.status);rev=r.j.rev;S=fix(r.j.data||{});S.users=r.j.users||[]}
  else{var d=null;try{d=JSON.parse(localStorage.getItem(K))}catch(e){}S=fix(d||{});S.users=[ME]}}
-async function save(){
+var DV=0;
+async function save(){DV++;
  var d=Object.assign({},S);delete d.users;
  if(!REMOTE){try{localStorage.setItem(K,JSON.stringify(d));return true}catch(e){alert(t("save_err"));return false}}
  try{var r=await net("PUT","/api/state",{rev:rev,data:d});
@@ -208,7 +211,7 @@ function waNumber(p){var s=String(p).trim(),intl=/^(\+|00)/.test(s),d=digits(s).
  return d.length>=8&&d.length<=15?d:""}
 
 /* ================= menu ================= */
-var M=[["g_quotations",[["m_create_q","qform"],["m_all_q","q:All"],["m_new_q","q:New"],["m_sent_q","q:Sent"],["m_accepted","q:Accepted"],["m_declined","q:Declined"]]],
+var M=[["g_quotations",[["m_create_q","qform"],["m_all_q","q:All"],["m_new_q","q:New"],["m_sent_q","q:Sent"]]],
 ["g_users",[["m_add_user","uadd"],["m_all_users","ulist"]]],
 ["g_products",[["m_add_product","add:products"],["m_all_products","list:products"],["m_import_products","imp:products"]]],
 ["g_clients",[["m_add_client","add:clients"],["m_all_clients","list:clients"],["m_import_clients","imp:clients"]]],
@@ -234,11 +237,12 @@ var F={
 products:{f:[["name","c_name"],["type","c_type","select",["Product","Service"]],["price","c_price","number"],["desc","c_desc","textarea"]],to:"list:products"},
 clients:{f:[["name","c_cname"],["contact","c_contact"],["email","c_email","email"],["phone","c_phone","tel"],["address","c_address","textarea"]],to:"list:clients"},
 companies:{f:[["name","c_coname"],["tax","c_tax"],["email","c_email","email"],["phone","c_phone","tel"],["address","c_address","textarea"]],to:"list:companies"},
-requests:{f:[["client","c_client","select",clientOpts],["details","c_details","textarea"],["due","c_due","date"]],to:"req:all"}};
+requests:{f:[["client","c_client","combo",clientOpts],["details","c_details","textarea"],["due","c_due","date"]],to:"req:all"}};
 var L={products:["name","type","price","desc"],clients:["name","contact","email","phone"],companies:["name","tax","email","phone"]};
 /* Text fields get dir="auto" so Arabic typing is right-to-left and Latin text stays left-to-right, whatever the UI language. */
 function field(f,val){var n=f[0],ty=f[2]||"text",o=f[3],x=val==null?"":val,h='<label>'+esc(t(f[1]))+'</label>';
  if(ty==="textarea")return h+'<textarea name="'+n+'" rows="3" dir="auto">'+esc(x)+'</textarea>';
+ if(ty==="combo"){var ca=o();return h+'<input name="'+n+'" list="dl_'+n+'" value="'+esc(x)+'" dir="auto" autocomplete="off" placeholder="'+esc(t("search_ph"))+'"><datalist id="dl_'+n+'">'+ca.map(function(y){return'<option value="'+esc(y)+'">'}).join("")+'</datalist>'}
  if(ty==="select"){var a=typeof o==="function"?o():o;return h+'<select name="'+n+'">'+a.map(function(y){return'<option value="'+esc(y)+'"'+(y===x?" selected":"")+'>'+esc(tv(y))+'</option>'}).join("")+'</select>'}
  var ltr=ty!=="text";return h+'<input name="'+n+'" type="'+ty+'" value="'+esc(x)+'" dir="'+(ltr?"ltr":"auto")+'"'+(ty==="number"?' step="any" min="0"':"")+' autocomplete="off">'}
 function addForm(k,id){var c=F[k],rec=id?find(S[k],id):null;if(id&&!rec){go(c.to);return}
@@ -249,7 +253,7 @@ function addForm(k,id){var c=F[k],rec=id?find(S[k],id):null;if(id&&!rec){go(c.to
   c.f.forEach(function(f){var el=document.querySelector('[name="'+f[0]+'"]');r[f[0]]=el.value.trim();if(f[0]==="name"&&!r.name)ok=false});
   if(!ok){alert(t("name_req"));return}
   if(k==="products")r.price=+r.price||0;
-  if(k==="requests"){if(!r.client||!r.due){alert(t("pick_client_due"));return}}
+  if(k==="requests"){if(!r.client||!r.due||clientOpts().indexOf(r.client)<0){alert(t("pick_client_due"));return}}
   if(rec){var old=rec.name;
    if(k==="clients"&&old!==r.name){S.quotations.forEach(function(q){if(q.client===old)q.client=r.name});S.requests.forEach(function(q){if(q.client===old)q.client=r.name})}
    Object.assign(rec,r)}
@@ -430,14 +434,20 @@ function newDraft(q){
  if(q)return{qid:q.id,client:q.client,companyId:q.companyId?String(q.companyId):"",valid:q.valid||"",tax:q.tax,notes:q.notes||"",dirty:false,
   lines:q.items.map(function(i){var p=S.products.filter(function(x){return x.name===i.name})[0];return{pid:p?String(p.id):"",name:i.name,desc:i.desc||"",qty:i.qty,price:i.price}})};
  return{qid:null,client:S.clients[0]?S.clients[0].name:"",companyId:S.companies[0]?String(S.companies[0].id):"",valid:"",tax:14,notes:"",dirty:false,lines:S.products[0]?[lineOf(S.products[0])]:[]}}
+function cbox(kind,val){return'<div class="cb2"><input class="cbi" data-cb="'+kind+'" autocomplete="off" dir="auto" value="'+esc(val)+'" placeholder="'+esc(t("search_ph"))+'"><div class="cbl" hidden></div></div>'}
+var CBC={};
+function cbItems(kind){var src=kind==="client"?S.clients:S.products,c=CBC[kind];if(c&&c.src===src&&c.dv===DV&&c.n===src.length)return c.v;var v=cbBuild(kind);CBC[kind]={src:src,dv:DV,n:src.length,v:v};return v}
+function cbBuild(kind){return kind==="client"?S.clients.map(function(c){return{label:c.name,sub:c.phone||c.contact||"",key:nz(c.name+" "+(c.contact||"")+" "+(c.phone||"")+" "+(c.email||"")),n:nz(c.name),val:c.name}}):
+ S.products.map(function(p){return{label:p.name,sub:money(p.price),key:nz(p.name+" "+(p.desc||"")),n:nz(p.name),val:String(p.id)}})}
+function cbFilter(all,q){var tk=String(q||"").trim().split(/\s+/).map(nz).filter(Boolean);if(!tk.length)return all.slice(0,50);var out=[];
+ for(var i=0;i<all.length;i++){var it=all[i],ok=true;for(var j=0;j<tk.length;j++)if(it.key.indexOf(tk[j])<0){ok=false;break}
+  if(ok){var at=it.n.indexOf(tk[0]);out.push([at===0?0:at>0?1:2,i,it])}}
+ out.sort(function(a,b){return a[0]-b[0]||a[1]-b[1]});return out.slice(0,50).map(function(x){return x[2]})}
 function qform(){var tb=cur(),dr=tb.draft,edit=!!dr.qid,ti=t(edit?"edit_q":"m_create_q");
  if(!S.clients.length||!S.products.length){v('<h2>'+esc(ti)+'</h2><div class="card empty">'+esc(t("need_data"))+'</div>');return}
- var cn=S.clients.map(function(c){return c.name});if(cn.indexOf(dr.client)<0)cn.unshift(dr.client);
- var co=S.companies.length?'<div><label>'+esc(t("f_company"))+'</label><select id="qco">'+S.companies.map(function(c){return'<option value="'+c.id+'"'+(String(c.id)===dr.companyId?" selected":"")+'>'+esc(c.name)+'</option>'}).join("")+'</select></div>':"";
- function lineH(l,i){var po=S.products.map(function(p){return'<option value="'+p.id+'"'+(String(p.id)===l.pid?" selected":"")+'>'+esc(p.name)+'</option>'}).join("");
-  if(!l.pid)po='<option value="" selected>'+esc(l.name)+'</option>'+po;
-  return'<div class="line" data-i="'+i+'"><select data-lf="pid">'+po+'</select><input type="number" min="0" step="any" dir="ltr" data-lf="qty" value="'+esc(l.qty)+'"><input type="number" min="0" step="0.01" dir="ltr" data-lf="price" value="'+esc(l.price)+'"><button class="btn s o" data-lx="'+i+'">✕</button></div>'}
- v('<h2>'+esc(ti)+'</h2><div class="card" id="qf"><div class="grid">'+co+'<div><label>'+esc(t("c_client"))+'</label><select id="qc">'+cn.map(function(c){return'<option'+(c===dr.client?" selected":"")+' value="'+esc(c)+'">'+esc(c)+'</option>'}).join("")+'</select></div>'+
+  var co=S.companies.length?'<div><label>'+esc(t("f_company"))+'</label><select id="qco">'+S.companies.map(function(c){return'<option value="'+c.id+'"'+(String(c.id)===dr.companyId?" selected":"")+'>'+esc(c.name)+'</option>'}).join("")+'</select></div>':"";
+ function lineH(l,i){return'<div class="line" data-i="'+i+'">'+cbox("prod",l.name)+'<input type="number" min="0" step="any" dir="ltr" data-lf="qty" value="'+esc(l.qty)+'"><input type="number" min="0" step="0.01" dir="ltr" data-lf="price" value="'+esc(l.price)+'"><button class="btn s o" data-lx="'+i+'">✕</button></div>'}
+ v('<h2>'+esc(ti)+'</h2><div class="card" id="qf"><div class="grid">'+co+'<div><label>'+esc(t("c_client"))+'</label>'+cbox("client",dr.client)+'</div>'+
  '<div><label>'+esc(t("valid_until"))+'</label><input type="date" id="vu" dir="ltr" value="'+esc(dr.valid)+'"></div><div><label>'+esc(t("tax_pct"))+'</label><input type="number" id="tx" min="0" step="any" dir="ltr" value="'+esc(dr.tax)+'"></div></div>'+
  '<label>'+esc(t("items"))+'</label><div id="ls">'+dr.lines.map(lineH).join("")+'</div><button class="btn o s" id="al">'+esc(t("add_item"))+'</button><p><b>'+esc(t("total"))+': <span id="tt">0.00</span></b></p>'+
  '<label>'+esc(t("notes"))+'</label><textarea id="nt" rows="2" dir="auto">'+esc(dr.notes)+'</textarea><p><button class="btn" id="sv">'+esc(t(edit?"save_changes":"save_q"))+'</button></p></div>');
@@ -451,7 +461,34 @@ function qform(){var tb=cur(),dr=tb.draft,edit=!!dr.qid,ti=t(edit?"edit_q":"m_cr
   else if(el.id==="tx")dr.tax=el.value===""?0:+el.value;else if(el.id==="nt")dr.notes=el.value;else return;
   touch();calc()});
  $("qf").addEventListener("click",function(e){var x=e.target.closest("[data-lx]");if(x){dr.lines.splice(+x.dataset.lx,1);touch();qform()}});
- $("al").onclick=function(){if(S.products.length){dr.lines.push(lineOf(S.products[0]));touch();qform()}};
+ $("al").onclick=function(){if(S.products.length){dr.lines.push(lineOf(S.products[0]));touch();qform();var ins=document.querySelectorAll("#ls .cbi"),last=ins[ins.length-1];if(last)last.focus()}};
+ /* searchable pickers: type any part of the name (or phone / description), arrows + Enter, Tab accepts the top match */
+ var CB=null;
+ function cbClose(){if(CB){CB.list.hidden=true;CB=null}}
+ function cbRender(){CB.list.innerHTML=CB.items.length?CB.items.map(function(it,i){return'<div class="cbo'+(i===CB.idx?" on":"")+'" data-o="'+i+'"><span dir="auto">'+esc(it.label)+'</span>'+(it.sub?'<small dir="auto">'+esc(it.sub)+'</small>':"")+'</div>'}).join(""):'<div class="cbe">'+esc(t("no_match"))+'</div>';
+  CB.list.hidden=false;var on=CB.list.querySelector(".on");if(on)on.scrollIntoView({block:"nearest"})}
+ function cbOpen(inp){if(CB&&CB.inp===inp)return;cbClose();var kind=inp.dataset.cb;CB={inp:inp,kind:kind,list:inp.nextElementSibling,all:cbItems(kind),items:[],idx:0};CB.items=cbFilter(CB.all,"");cbRender()}
+ function curLabel(inp){var ln=inp.closest(".line");if(ln){var l=dr.lines[+ln.dataset.i];return l?l.name:""}return dr.client}
+ function cbPick(it,keep){var inp=CB.inp,kind=CB.kind,ln=inp.closest(".line");
+  if(kind==="client"){dr.client=it.val;inp.value=it.label;cbClose();touch();return}
+  var l=dr.lines[+ln.dataset.i],p=find(S.products,it.val);if(!p){cbClose();return}
+  l.pid=String(p.id);l.name=p.name;l.desc=p.desc||"";l.price=p.price||0;inp.value=p.name;ln.querySelector('[data-lf="price"]').value=l.price;cbClose();touch();calc();
+  if(!keep){var q2=ln.querySelector('[data-lf="qty"]');q2.focus();q2.select()}}
+ var qf=$("qf");
+ qf.addEventListener("focusin",function(e){var el=e.target;if(el.classList.contains("cbi")){cbOpen(el);setTimeout(function(){el.select()},0)}});
+ qf.addEventListener("input",function(e){var el=e.target;if(!el.classList.contains("cbi"))return;if(!CB||CB.inp!==el)cbOpen(el);CB.items=cbFilter(CB.all,el.value);CB.idx=0;cbRender()});
+ qf.addEventListener("focusout",function(e){var inp=e.target;if(!inp.classList.contains("cbi")||!CB||CB.inp!==inp)return;
+  var typed=inp.value.trim();if(typed!==curLabel(inp)){var ex=CB.all.filter(function(it){return it.label===typed}),m=ex.length?ex:cbFilter(CB.all,typed);
+   if(m.length===1||ex.length)cbPick(m[0],true);else inp.value=curLabel(inp)}
+  cbClose()});
+ qf.addEventListener("keydown",function(e){var inp=e.target;if(!inp.classList.contains("cbi"))return;
+  if(!CB||CB.inp!==inp){if(e.key==="ArrowDown"){cbOpen(inp);e.preventDefault()}return}
+  if(e.key==="ArrowDown"){CB.idx=Math.min(CB.idx+1,CB.items.length-1);cbRender();e.preventDefault()}
+  else if(e.key==="ArrowUp"){CB.idx=Math.max(CB.idx-1,0);cbRender();e.preventDefault()}
+  else if(e.key==="Enter"){if(CB.items[CB.idx])cbPick(CB.items[CB.idx]);e.preventDefault()}
+  else if(e.key==="Escape"){inp.value=curLabel(inp);cbClose();e.preventDefault()}
+  else if(e.key==="Tab"&&inp.value.trim()!==curLabel(inp)&&CB.items[CB.idx])cbPick(CB.items[CB.idx],true)});
+ qf.addEventListener("mousedown",function(e){var o=e.target.closest(".cbo");if(o&&CB){e.preventDefault();cbPick(CB.items[+o.dataset.o])}});
  $("sv").onclick=async function(){var items=dr.lines.filter(function(l){return+l.qty>0}).map(function(l){return{name:l.name,desc:l.desc||"",qty:+l.qty,price:+l.price||0}});
   if(!items.length){alert(t("need_item"));return}
   var tax=+dr.tax||0,sub=items.reduce(function(a,i){return a+i.qty*i.price},0),rec=null;
@@ -467,7 +504,6 @@ function qlist(st){var rs=S.quotations.filter(function(q){return st==="All"||q.s
  if(!rs.length)h+='<div class="empty">'+esc(t("no_q"))+'</div>';
  else h+='<table><tr><th>'+esc(t("th_no"))+'</th><th>'+esc(t("c_client"))+'</th><th>'+esc(t("th_date"))+'</th><th>'+esc(t("items"))+'</th><th>'+esc(t("total"))+'</th><th>'+esc(t("th_status"))+'</th><th></th></tr>'+rs.map(function(q){var a="";
  if(canW()&&q.status==="New")a='<button class="btn s" data-a="st" data-s="Sent" data-id="'+q.id+'">'+esc(t("send_client"))+'</button><button class="btn s o" data-a="qedit" data-id="'+q.id+'">'+esc(t("edit"))+'</button>';
- if(canW()&&q.status==="Sent")a='<button class="btn s g2" data-a="st" data-s="Accepted" data-id="'+q.id+'">'+esc(t("accept"))+'</button><button class="btn s" data-a="st" data-s="Declined" data-id="'+q.id+'">'+esc(t("decline"))+'</button>';
  return'<tr><td>'+esc(q.no)+'</td><td>'+esc(q.client)+'</td><td>'+esc(q.date)+'</td><td>'+q.items.map(function(i){return esc(i.name)+" ×"+esc(i.qty)}).join(lang==="ar"?"، ":", ")+'</td><td>'+money(q.total)+'</td><td><span class="tag '+q.status+'">'+esc(tv(q.status))+'</span></td><td>'+a+'<button class="btn s o" data-a="view" data-id="'+q.id+'">'+esc(t("print_a4"))+'</button></td></tr>'}).join("")+'</table>';
  v(h+'</div>')}
 function qview(id){var q=find(S.quotations,id),tb=cur();if(!q){go("q:All");return}
@@ -503,7 +539,7 @@ products:{name:["name","item","item name","product","product name","service","ا
  type:["type","category","kind","النوع","نوع","التصنيف","الفئة","فئة"],
  price:["price","unit price","unitprice","cost","rate","selling price","amount","السعر","سعر","سعر الوحدة","سعر البيع","التكلفة","القيمة","سعر الوحده"],
  desc:["desc","description","details","notes","note","الوصف","وصف","تفاصيل","ملاحظات","التفاصيل"]}};
-function nz(s){return digits(String(s==null?"":s)).toLowerCase().replace(/[ً-ٰٟـ]/g,"").replace(/[أإآٱ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/[^a-z0-9ء-ي]/g,"")}
+function nz(s){return digits(String(s==null?"":s)).toLowerCase().replace(/[ً-ٰٟـ]/g,"").replace(/[أإآٱ]/g,"ا").replace(/ؤ/g,"و").replace(/ئ/g,"ي").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/[^a-z0-9ء-ي]/g,"")}
 var ALN={};Object.keys(AL).forEach(function(k){ALN[k]={};Object.keys(AL[k]).forEach(function(f){ALN[k][f]=AL[k][f].map(nz)})});
 function fields(k){return Object.keys(AL[k])}
 function isNum(x){return typeof x==="number"?isFinite(x):/^[\s]*[-+]?[\d٠-٩][\d٠-٩,٬.٫\s]*$/.test(String(x))&&String(x).trim()!==""}
