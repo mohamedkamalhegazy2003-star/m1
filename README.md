@@ -12,6 +12,18 @@ Windows desktop app built with Electron. Arabic / English (RTL), one server devi
 - **Edit** clients, products / services, users and company data (menu lists → *Edit*).
 - **Quotation view** with company header, PDF export, print, and **WhatsApp**: the PDF is saved to `Documents/Quotations`, its folder opens, and WhatsApp opens a chat with the client's number and a ready message — attach the PDF there (WhatsApp links cannot attach files by themselves).
 
+## Login and users
+- On the **server device**, the first launch asks you to create the administrator account (this can only be done on the server device itself).
+- Every device then signs in with a username and password. Passwords are stored hashed on the server only; 5 wrong attempts lock that username/device for a short time.
+- Roles: **Admin** (everything, including users), **Sales** (all data), **Viewer** (read only). Admins add, edit, reset passwords and delete users from *Users*; everyone can change their own password in *Settings*.
+- Note: traffic between devices is plain HTTP on your local network. Use it on a trusted network.
+
+## Tabs
+Open several quotations at once, like browser tabs: **+** or *Create Quotation* opens a new tab with its own draft; opening a quotation opens/focuses its tab. Drafts are kept (and restored after restarting) until you close the tab.
+
+## Quotation templates (Settings)
+Four black-and-white A4 templates (classic, formal double, simple, compact). Choose the default, duplicate a template, or edit its design (header, table style, fonts, margins, terms, signature/stamp boxes, footer) with a live preview. Print, PDF and WhatsApp use the template chosen on the quotation page.
+
 ## Run locally
     npm install
     npm start
