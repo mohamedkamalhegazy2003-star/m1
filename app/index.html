@@ -109,9 +109,9 @@ err_bad_login:"Wrong username or password.",err_locked:"Too many attempts. Try a
 c_username:"Username",pw_keep:"New password (leave empty to keep the current one)",current_pw:"Current password",new_pw:"New password (leave empty to keep)",my_account:"My account",pw_changed:"Account updated.",confirm_del_user:"Delete this user?",f_display_name:"Display name",role_help:"Admin: everything, including users. Sales: all data. Viewer: read only.",self_pw_hint:"You can change your own password from Settings.",
 tab_new:"New quotation",tab_close:"Close tab",confirm_close:"This tab has unsaved changes. Close it anyway?",print_a4:"A4 print view",edit_q:"Edit quotation",doc_tpl:"Template",save_changes:"Save changes",
 tpl_title:"Quotation templates and design",tpl_hint:"Choose the default template used for printing and PDF, or edit a design. All templates print in black and white only.",tpl_name:"Template name",tpl_default:"Default",tpl_use:"Use as default",tpl_edit:"Edit design",tpl_dup:"Duplicate",tpl_del:"Delete",tpl_reset:"Restore original design",tpl_copy:"copy",tpl_saved:"Template saved.",confirm_del_tpl:"Delete this template?",preview:"Preview",
-d_title_ar:"Document title (Arabic)",d_title_en:"Document title (English)",d_head:"Header style",d_table:"Items table style",d_font:"Font size",d_margin:"Page margin (mm)",d_numbering:"Row numbers",d_desc:"Item descriptions",d_taxno:"Company tax number",d_valid:"Validity date",d_clientbox:"Client details in a box",d_sign:"Signature boxes",d_stamp:"Stamp box",d_terms_ar:"Terms and conditions - Arabic (one per line)",d_terms_en:"Terms and conditions - English (one per line)",d_footer:"Footer line",
+d_title_ar:"Document title (Arabic)",d_title_en:"Document title (English)",d_head:"Header style",d_table:"Items table style",d_font:"Font size",d_margin:"Page margin (mm)",d_numbering:"Row numbers",d_desc:"Item descriptions",d_taxno:"Company tax number",d_valid:"Validity date",d_clientbox:"Client details in a box",d_sign:"Company approval box",d_stamp:"Stamp box",d_terms_ar:"Terms and conditions - Arabic (one per line)",d_terms_en:"Terms and conditions - English (one per line)",d_footer:"Footer line",
 o_boxed:"Boxed",o_lined:"Underlined",o_centered:"Centered",o_grid:"Full grid",o_lines:"Horizontal lines",o_double:"Double border",s_item1:"Sample item",s_item2:"Another item",s_desc:"Item description",s_client:"Sample client",
-search_ph:"Type to search...",no_match:"No matches",doc_title:"Quotation",lang_btn:"العربية"
+tax_add:"Add tax (%)",s_pname:"Company name on documents",s_ptax:"Tax registration number",s_pdoc_hint:"Shown in the header of printed quotations. If left empty, the registered company data is used.",search_ph:"Type to search...",no_match:"No matches",doc_title:"Quotation",lang_btn:"العربية"
 },ar:{
 app_title:"إدارة عروض الأسعار",
 g_quotations:"عروض الأسعار",g_users:"المستخدمون",g_products:"الأصناف / الخدمات",g_clients:"العملاء",g_admin:"الإدارة",g_requests:"طلبات عروض الأسعار",
@@ -151,9 +151,9 @@ err_bad_login:"اسم المستخدم أو كلمة السر غير صحيحة.
 c_username:"اسم المستخدم",pw_keep:"كلمة سر جديدة (اتركها فارغة للإبقاء على الحالية)",current_pw:"كلمة السر الحالية",new_pw:"كلمة سر جديدة (اتركها فارغة للإبقاء)",my_account:"حسابي",pw_changed:"تم تحديث الحساب.",confirm_del_user:"هل تريد حذف هذا المستخدم؟",f_display_name:"الاسم الظاهر",role_help:"مدير: كل الصلاحيات بما فيها المستخدمين. مبيعات: كل البيانات. مشاهد: عرض فقط.",self_pw_hint:"يمكنك تغيير كلمة سرك من الإعدادات.",
 tab_new:"عرض جديد",tab_close:"إغلاق التبويب",confirm_close:"هذا التبويب به تعديلات غير محفوظة. هل تريد إغلاقه؟",print_a4:"عرض للطباعة A4",edit_q:"تعديل العرض",doc_tpl:"النموذج",save_changes:"حفظ التعديلات",
 tpl_title:"نماذج عروض الأسعار والتصميم",tpl_hint:"اختر النموذج الافتراضي للطباعة وملف PDF، أو عدّل التصميم. كل النماذج تُطبع بالأبيض والأسود فقط.",tpl_name:"اسم النموذج",tpl_default:"الافتراضي",tpl_use:"اجعله الافتراضي",tpl_edit:"تعديل التصميم",tpl_dup:"نسخ",tpl_del:"حذف",tpl_reset:"استعادة التصميم الأصلي",tpl_copy:"نسخة",tpl_saved:"تم حفظ النموذج.",confirm_del_tpl:"هل تريد حذف هذا النموذج؟",preview:"معاينة",
-d_title_ar:"عنوان المستند (عربي)",d_title_en:"عنوان المستند (إنجليزي)",d_head:"شكل الترويسة",d_table:"شكل جدول الأصناف",d_font:"حجم الخط",d_margin:"هوامش الصفحة (مم)",d_numbering:"ترقيم الصفوف",d_desc:"وصف الأصناف",d_taxno:"الرقم الضريبي للشركة",d_valid:"تاريخ الصلاحية",d_clientbox:"بيانات العميل داخل إطار",d_sign:"خانات التوقيع",d_stamp:"خانة الختم",d_terms_ar:"الشروط والأحكام - عربي (كل شرط في سطر)",d_terms_en:"الشروط والأحكام - إنجليزي (كل شرط في سطر)",d_footer:"سطر أسفل الصفحة",
+d_title_ar:"عنوان المستند (عربي)",d_title_en:"عنوان المستند (إنجليزي)",d_head:"شكل الترويسة",d_table:"شكل جدول الأصناف",d_font:"حجم الخط",d_margin:"هوامش الصفحة (مم)",d_numbering:"ترقيم الصفوف",d_desc:"وصف الأصناف",d_taxno:"الرقم الضريبي للشركة",d_valid:"تاريخ الصلاحية",d_clientbox:"بيانات العميل داخل إطار",d_sign:"خانة اعتماد الشركة",d_stamp:"خانة الختم",d_terms_ar:"الشروط والأحكام - عربي (كل شرط في سطر)",d_terms_en:"الشروط والأحكام - إنجليزي (كل شرط في سطر)",d_footer:"سطر أسفل الصفحة",
 o_boxed:"داخل إطار",o_lined:"بخط سفلي",o_centered:"في المنتصف",o_grid:"شبكة كاملة",o_lines:"خطوط أفقية",o_double:"إطار مزدوج",s_item1:"صنف تجريبي",s_item2:"صنف آخر",s_desc:"وصف الصنف",s_client:"عميل تجريبي",
-search_ph:"اكتب للبحث...",no_match:"لا توجد نتائج",doc_title:"عرض سعر",lang_btn:"English"
+tax_add:"إضافة ضريبة (%)",s_pname:"اسم الشركة على المستند",s_ptax:"رقم التسجيل الضريبي",s_pdoc_hint:"يظهر في ترويسة عرض السعر المطبوع. إذا تركته فارغاً تُستخدم بيانات الشركة المسجلة.",search_ph:"اكتب للبحث...",no_match:"لا توجد نتائج",doc_title:"عرض سعر",lang_btn:"English"
 }};
 var lang=(function(){try{return localStorage.getItem("qm-lang")||"ar"}catch(e){return"ar"}})();
 function t(k,o){var s=(T[lang]&&T[lang][k])||T.en[k]||k;if(o)for(var x in o)s=s.split("{"+x+"}").join(o[x]);return s}
@@ -343,16 +343,17 @@ function ensureTpl(d){var s=d.settings;if(!Array.isArray(s.templates))s.template
 function tplById(id){return S.settings.templates.filter(function(x){return x.id===id})[0]||S.settings.templates[0]}
 function tplDraft(id){var tp=tplById(id);return{tid:tp.id,name:tp.name,d:clone(tp.d),def:S.settings.defaultTpl===tp.id,dirty:false}}
 function fmtD(s){var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||"");return m?m[3]+"/"+m[2]+"/"+m[1]:(s||"")}
-var DOC={en:{title:"Quotation",no:"Quotation No.",date:"Date",valid:"Valid until",to:"To",item:"Description",qty:"Qty",price:"Unit price",total:"Total",sub:"Subtotal",tax:"Tax",grand:"Grand total",notes:"Notes",tel:"Tel",email:"Email",taxno:"Tax No.",att:"Attn",addr:"Address",no_col:"#",terms:"Terms and conditions",sign_co:"Company approval",sign_cl:"Client acceptance",stamp:"Stamp"},
-ar:{title:"عرض سعر",no:"رقم العرض",date:"التاريخ",valid:"ساري حتى",to:"السادة",item:"البيان",qty:"الكمية",price:"سعر الوحدة",total:"الإجمالي",sub:"المجموع",tax:"الضريبة",grand:"الإجمالي النهائي",notes:"ملاحظات",tel:"هاتف",email:"البريد",taxno:"الرقم الضريبي",att:"عناية",addr:"العنوان",no_col:"م",terms:"الشروط والأحكام",sign_co:"اعتماد الشركة",sign_cl:"موافقة العميل",stamp:"الختم"}};
+var DOC={en:{title:"Quotation",no:"Quotation No.",date:"Date",valid:"Valid until",to:"To",item:"Description",qty:"Qty",price:"Unit price",total:"Total",sub:"Subtotal",tax:"Tax",grand:"Grand total",notes:"Notes",tel:"Tel",email:"Email",taxno:"Tax Reg. No.",att:"Attn",addr:"Address",no_col:"#",terms:"Terms and conditions",sign_co:"Company approval",sign_cl:"Client acceptance",stamp:"Stamp"},
+ar:{title:"عرض سعر",no:"رقم العرض",date:"التاريخ",valid:"ساري حتى",to:"السادة",item:"البيان",qty:"الكمية",price:"سعر الوحدة",total:"الإجمالي",sub:"المجموع",tax:"الضريبة",grand:"الإجمالي النهائي",notes:"ملاحظات",tel:"هاتف",email:"البريد",taxno:"رقم التسجيل الضريبي",att:"عناية",addr:"العنوان",no_col:"م",terms:"الشروط والأحكام",sign_co:"اعتماد الشركة",sign_cl:"موافقة العميل",stamp:"الختم"}};
 /* Pure black on white only - nothing relies on colour or grey, so it prints cleanly on a black & white printer. */
 function qdoc(q,dl,tp){tp=tp||tplById(S.settings.defaultTpl);var d=tp.d,D=DOC[dl],rtl=dl==="ar",
  co=find(S.companies,q.companyId)||S.companies[0]||{},cl=S.clients.filter(function(c){return c.name===q.client})[0]||{name:q.client},
+ pn=(S.settings.pn||"").trim()||co.name||"",pt=(S.settings.pt||"").trim()||co.tax||"",
  sub=q.items.reduce(function(a,i){return a+i.qty*i.price},0),tx=sub*q.tax/100,M=+d.margin||12,F=+d.font||13,
  title=(rtl?d.title_ar:d.title_en)||D.title,terms=(rtl?d.terms_ar:d.terms_en)||"";
  function sp(x){return'<span dir="auto">'+esc(x)+'</span>'}
  function ln(l,x){return x?'<div>'+(l?'<b>'+esc(l)+':</b> ':"")+sp(x)+'</div>':""}
- var coB='<div class="cn" dir="auto">'+esc(co.name||"")+'</div>'+(d.taxno?ln(D.taxno,co.tax):"")+ln("",co.address)+ln(D.tel,co.phone)+ln(D.email,co.email);
+ var coB='<div class="cn" dir="auto">'+esc(pn)+'</div>'+(d.taxno?ln(D.taxno,pt):"")+ln("",co.address)+ln(D.tel,co.phone)+ln(D.email,co.email);
  var meta=[[D.no,q.no],[D.date,fmtD(q.date)]];if(d.valid&&q.valid)meta.push([D.valid,fmtD(q.valid)]);
  var metaT='<table class="mt">'+meta.map(function(r){return'<tr><td class="l">'+esc(r[0])+'</td><td>'+sp(r[1])+'</td></tr>'}).join("")+'</table>';
  var head;
@@ -386,11 +387,11 @@ function qdoc(q,dl,tp){tp=tp||tplById(S.settings.defaultTpl);var d=tp.d,D=DOC[dl
  '.ft{margin-top:10px;padding-top:6px;border-top:1px solid #000;text-align:center;font-size:.88em}';
  return'<!DOCTYPE html><html lang="'+dl+'" dir="'+(rtl?"rtl":"ltr")+'"><head><meta charset="utf-8"><title>'+esc(q.no)+'</title><style>'+css+'</style></head><body><div class="pg">'+head+cb+
  '<table class="it"><thead><tr>'+th+'</tr></thead><tbody>'+tr+'</tbody></table>'+
- '<table class="tt"><tr><td>'+esc(D.sub)+'</td><td>'+money(sub)+'</td></tr><tr><td>'+esc(D.tax)+' ('+esc(q.tax)+'%)</td><td>'+money(tx)+'</td></tr><tr class="g"><td>'+esc(D.grand)+'</td><td>'+money(sub+tx)+'</td></tr></table>'+
+ '<table class="tt">'+(q.tax>0?'<tr><td>'+esc(D.sub)+'</td><td>'+money(sub)+'</td></tr><tr><td>'+esc(D.tax)+' ('+esc(q.tax)+'%)</td><td>'+money(tx)+'</td></tr>':"")+'<tr class="g"><td>'+esc(D.grand)+'</td><td>'+money(sub+tx)+'</td></tr></table>'+
  (q.notes?'<div class="nt"><b>'+esc(D.notes)+':</b> <span dir="auto">'+esc(q.notes)+'</span></div>':"")+
  (tl.length?'<div class="tm"><b>'+esc(D.terms)+'</b><ol>'+tl.map(function(x){return'<li dir="auto">'+esc(x)+'</li>'}).join("")+'</ol></div>':"")+
  '<div class="sp"></div>'+
- (d.sign||d.stamp?'<div class="sg">'+(d.sign?'<div>'+esc(D.sign_co)+'</div><div>'+esc(D.sign_cl)+'</div>':"")+(d.stamp?'<div class="s">'+esc(D.stamp)+'</div>':"")+'</div>':"")+
+ (d.sign||d.stamp?'<div class="sg">'+(d.sign?'<div>'+esc(D.sign_co)+'</div>':"")+(d.stamp?'<div class="s">'+esc(D.stamp)+'</div>':"")+'</div>':"")+
  (d.footer?'<div class="ft" dir="auto">'+esc(d.footer)+'</div>':"")+'</div></body></html>'}
 function sampleQ(){if(S.quotations.length)return S.quotations[S.quotations.length-1];
  return{no:"Q-001",client:(S.clients[0]&&S.clients[0].name)||t("s_client"),companyId:"",date:today,valid:today,tax:14,notes:"",status:"New",
@@ -431,9 +432,9 @@ function tplEditor(){var tb=cur(),dr=tb.draft,dl=tb.dl||lang,bi=BUILTIN.filter(f
 /* ================= quotations ================= */
 function lineOf(p){return{pid:String(p.id),name:p.name,desc:p.desc||"",qty:1,price:p.price||0}}
 function newDraft(q){
- if(q)return{qid:q.id,client:q.client,companyId:q.companyId?String(q.companyId):"",valid:q.valid||"",tax:q.tax,notes:q.notes||"",dirty:false,
+ if(q)return{qid:q.id,client:q.client,companyId:q.companyId?String(q.companyId):"",valid:q.valid||"",tax:q.tax>0?q.tax:14,taxOn:q.tax>0,notes:q.notes||"",dirty:false,
   lines:q.items.map(function(i){var p=S.products.filter(function(x){return x.name===i.name})[0];return{pid:p?String(p.id):"",name:i.name,desc:i.desc||"",qty:i.qty,price:i.price}})};
- return{qid:null,client:S.clients[0]?S.clients[0].name:"",companyId:S.companies[0]?String(S.companies[0].id):"",valid:"",tax:14,notes:"",dirty:false,lines:S.products[0]?[lineOf(S.products[0])]:[]}}
+ return{qid:null,client:S.clients[0]?S.clients[0].name:"",companyId:S.companies[0]?String(S.companies[0].id):"",valid:"",tax:14,taxOn:true,notes:"",dirty:false,lines:S.products[0]?[lineOf(S.products[0])]:[]}}
 function cbox(kind,val){return'<div class="cb2"><input class="cbi" data-cb="'+kind+'" autocomplete="off" dir="auto" value="'+esc(val)+'" placeholder="'+esc(t("search_ph"))+'"><div class="cbl" hidden></div></div>'}
 var CBC={};
 function cbItems(kind){var src=kind==="client"?S.clients:S.products,c=CBC[kind];if(c&&c.src===src&&c.dv===DV&&c.n===src.length)return c.v;var v=cbBuild(kind);CBC[kind]={src:src,dv:DV,n:src.length,v:v};return v}
@@ -448,17 +449,18 @@ function qform(){var tb=cur(),dr=tb.draft,edit=!!dr.qid,ti=t(edit?"edit_q":"m_cr
   var co=S.companies.length?'<div><label>'+esc(t("f_company"))+'</label><select id="qco">'+S.companies.map(function(c){return'<option value="'+c.id+'"'+(String(c.id)===dr.companyId?" selected":"")+'>'+esc(c.name)+'</option>'}).join("")+'</select></div>':"";
  function lineH(l,i){return'<div class="line" data-i="'+i+'">'+cbox("prod",l.name)+'<input type="number" min="0" step="any" dir="ltr" data-lf="qty" value="'+esc(l.qty)+'"><input type="number" min="0" step="0.01" dir="ltr" data-lf="price" value="'+esc(l.price)+'"><button class="btn s o" data-lx="'+i+'">✕</button></div>'}
  v('<h2>'+esc(ti)+'</h2><div class="card" id="qf"><div class="grid">'+co+'<div><label>'+esc(t("c_client"))+'</label>'+cbox("client",dr.client)+'</div>'+
- '<div><label>'+esc(t("valid_until"))+'</label><input type="date" id="vu" dir="ltr" value="'+esc(dr.valid)+'"></div><div><label>'+esc(t("tax_pct"))+'</label><input type="number" id="tx" min="0" step="any" dir="ltr" value="'+esc(dr.tax)+'"></div></div>'+
+ '<div><label>'+esc(t("valid_until"))+'</label><input type="date" id="vu" dir="ltr" value="'+esc(dr.valid)+'"></div><div><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="txon"'+(dr.taxOn!==false?" checked":"")+'> '+esc(t("tax_add"))+'</label><input type="number" id="tx" min="0" step="any" dir="ltr" value="'+esc(dr.tax)+'"'+(dr.taxOn!==false?"":" disabled")+'></div></div>'+
  '<label>'+esc(t("items"))+'</label><div id="ls">'+dr.lines.map(lineH).join("")+'</div><button class="btn o s" id="al">'+esc(t("add_item"))+'</button><p><b>'+esc(t("total"))+': <span id="tt">0.00</span></b></p>'+
  '<label>'+esc(t("notes"))+'</label><textarea id="nt" rows="2" dir="auto">'+esc(dr.notes)+'</textarea><p><button class="btn" id="sv">'+esc(t(edit?"save_changes":"save_q"))+'</button></p></div>');
- function calc(){var s=dr.lines.reduce(function(a,l){return a+(+l.qty||0)*(+l.price||0)},0);$("tt").textContent=money(s*(1+(+dr.tax||0)/100))}calc();
+ function taxv(){return dr.taxOn!==false?(+dr.tax||0):0}
+ function calc(){var s=dr.lines.reduce(function(a,l){return a+(+l.qty||0)*(+l.price||0)},0);$("tt").textContent=money(s*(1+taxv()/100))}calc();
  function touch(){dr.dirty=true;tabsSave();renderTabs()}
  $("qf").addEventListener("input",function(e){var el=e.target,ln=el.closest(".line");
   if(ln){var l=dr.lines[+ln.dataset.i],f=el.dataset.lf;if(!l||!f)return;
    if(f==="pid"){var p=find(S.products,el.value);if(p){l.pid=String(p.id);l.name=p.name;l.desc=p.desc||"";l.price=p.price||0;ln.querySelector('[data-lf="price"]').value=l.price}}
    else l[f]=el.value===""?0:+el.value}
   else if(el.id==="qc")dr.client=el.value;else if(el.id==="qco")dr.companyId=el.value;else if(el.id==="vu")dr.valid=el.value;
-  else if(el.id==="tx")dr.tax=el.value===""?0:+el.value;else if(el.id==="nt")dr.notes=el.value;else return;
+  else if(el.id==="tx")dr.tax=el.value===""?0:+el.value;else if(el.id==="txon"){dr.taxOn=el.checked;$("tx").disabled=!el.checked}else if(el.id==="nt")dr.notes=el.value;else return;
   touch();calc()});
  $("qf").addEventListener("click",function(e){var x=e.target.closest("[data-lx]");if(x){dr.lines.splice(+x.dataset.lx,1);touch();qform()}});
  $("al").onclick=function(){if(S.products.length){dr.lines.push(lineOf(S.products[0]));touch();qform();var ins=document.querySelectorAll("#ls .cbi"),last=ins[ins.length-1];if(last)last.focus()}};
@@ -491,7 +493,7 @@ function qform(){var tb=cur(),dr=tb.draft,edit=!!dr.qid,ti=t(edit?"edit_q":"m_cr
  qf.addEventListener("mousedown",function(e){var o=e.target.closest(".cbo");if(o&&CB){e.preventDefault();cbPick(CB.items[+o.dataset.o])}});
  $("sv").onclick=async function(){var items=dr.lines.filter(function(l){return+l.qty>0}).map(function(l){return{name:l.name,desc:l.desc||"",qty:+l.qty,price:+l.price||0}});
   if(!items.length){alert(t("need_item"));return}
-  var tax=+dr.tax||0,sub=items.reduce(function(a,i){return a+i.qty*i.price},0),rec=null;
+  var tax=taxv(),sub=items.reduce(function(a,i){return a+i.qty*i.price},0),rec=null;
   if(dr.qid){rec=find(S.quotations,dr.qid);if(!rec){alert(t("save_err"));return}}
   var o={client:dr.client,companyId:dr.companyId,valid:dr.valid,items:items,tax:tax,total:+(sub*(1+tax/100)).toFixed(2),notes:dr.notes.trim()};
   if(rec)Object.assign(rec,o);
@@ -616,13 +618,13 @@ async function impGo(){var k=IMP.k,r=impRecords(),a=0,u=0,s=r.blank,arr=S[k],idx
 function acctCard(){var pw='type="password" dir="ltr"';return'<div class="card"><h3 style="margin-top:0">'+esc(t("my_account"))+'</h3><div class="grid"><div><label>'+esc(t("f_display_name"))+'</label><input id="an" dir="auto" value="'+esc(ME.name)+'"></div><div><label>'+esc(t("c_username"))+'</label><input dir="ltr" value="'+esc(ME.username)+'" disabled></div><div><label>'+esc(t("current_pw"))+'</label><input id="acp" '+pw+' autocomplete="current-password"></div><div><label>'+esc(t("new_pw"))+'</label><input id="anp" '+pw+' autocomplete="new-password"></div><div><label>'+esc(t("confirm_pw"))+'</label><input id="anc" '+pw+' autocomplete="new-password"></div></div><p><button class="btn" id="asv">'+esc(t("save"))+'</button></p></div>'}
 async function settings(){
  v('<h2>'+esc(t("m_settings"))+'</h2><div class="card"><div class="grid"><div><label>'+esc(t("s_lang"))+'</label><select id="sl"><option value="ar"'+(lang==="ar"?" selected":"")+'>العربية</option><option value="en"'+(lang==="en"?" selected":"")+'>English</option></select></div>'+
- '<div><label>'+esc(t("s_cc"))+'</label><input id="scc" dir="ltr" value="'+esc(S.settings.cc)+'"></div></div><p><button class="btn" id="ssv">'+esc(t("save"))+'</button></p></div>'+(REMOTE?acctCard():"")+tplCard()+'<div class="card" id="dev"></div>');
+ '<div><label>'+esc(t("s_cc"))+'</label><input id="scc" dir="ltr" value="'+esc(S.settings.cc)+'"></div><div><label>'+esc(t("s_pname"))+'</label><input id="spn" dir="auto" value="'+esc(S.settings.pn||"")+'"></div><div><label>'+esc(t("s_ptax"))+'</label><input id="spt" dir="auto" value="'+esc(S.settings.pt||"")+'"></div></div><p class="mu">'+esc(t("s_pdoc_hint"))+'</p><p><button class="btn" id="ssv">'+esc(t("save"))+'</button></p></div>'+(REMOTE?acctCard():"")+tplCard()+'<div class="card" id="dev"></div>');
  if($("asv"))$("asv").onclick=async function(){var np=$("anp").value,body={name:$("an").value.trim()};
   if(np){if(np!==$("anc").value){alert(t("pw_mismatch"));return}body.password=np;body.currentPassword=$("acp").value}
   var r=await net("PUT","/api/users/"+ME.id,body);if(!r.ok){alert(errMsg(r.j));return}
   ME=r.j.user;menu();toast(t("pw_changed"));$("anp").value=$("anc").value=$("acp").value=""};
  $("sl").onchange=function(){setLang(this.value)};
- $("ssv").onclick=async function(){S.settings.cc=digits($("scc").value).replace(/\D/g,"")||"20";if(await save())toast(t("s_saved"))};
+ $("ssv").onclick=async function(){S.settings.cc=digits($("scc").value).replace(/\D/g,"")||"20";S.settings.pn=$("spn").value.trim();S.settings.pt=$("spt").value.trim();if(await save())toast(t("s_saved"))};
  var d=$("dev"),h='<h3 style="margin-top:0">'+esc(t("s_device"))+'</h3>';
  if(!window.api){d.innerHTML=h+'<p class="mu">'+esc(t("s_browser"))+'</p>';return}
  var i=await api.info();
