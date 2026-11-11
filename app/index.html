@@ -194,7 +194,9 @@ async function net(method,path,body){
 function errMsg(j){j=j||{};if(j.error==="locked")return t("err_locked",{s:j.wait});var k="err_"+j.error;return T[lang][k]?t(k):t("err_generic")}
 async function load(){
  if(REMOTE){var r=await net("GET","/api/state");if(!r.ok)throw new Error(r.status===401?"auth":"HTTP "+r.status);rev=r.j.rev;S=fix(r.j.data||{});S.users=r.j.users||[]}
- else{var d=null;try{d=JSON.parse(localStorage.getItem(K))}catch(e){}S=fix(d||{});S.users=[ME]}}
+ else{var d=null;try{d=JSON.parse(localStorage.getItem(K))}catch(e){}S=fix(d||{});S.users=[ME]}
+ var ch=false;["products","clients","companies"].forEach(function(k){if(canK(k)&&dedupe(S[k]))ch=true});
+ if(ch&&!load.busy){load.busy=true;try{await save()}finally{load.busy=false}}}
 var DV=0;
 async function save(){DV++;
  var d=Object.assign({},S);delete d.users;
@@ -222,7 +224,9 @@ function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){retur
 function v(h){$("v").innerHTML=h}
 function find(a,id){return a.filter(function(x){return String(x.id)===String(id)})[0]}
 function money(n){return(+n||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}
-function nextId(){return Date.now()+Math.floor(Math.random()*1000)}
+var _id=0;function nextId(){_id=Math.max(_id+1,Date.now()*1000);return _id}
+/* older imports could give several rows the same id; give duplicates fresh ids */
+function dedupe(a){var seen={},ch=false;a.forEach(function(r){var k=String(r.id);if(seen[k]){r.id=nextId();ch=true}seen[r.id]=1});return ch}
 function toast(m){var e=$("toast");e.textContent=m;e.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(function(){e.style.display="none"},6000)}
 function digits(s){return String(s).replace(/[٠-٩]/g,function(c){return c.charCodeAt(0)-1632}).replace(/[۰-۹]/g,function(c){return c.charCodeAt(0)-1776})}
 function waNumber(p){var s=String(p).trim(),intl=/^(\+|00)/.test(s),d=digits(s).replace(/\D/g,"");
@@ -481,8 +485,8 @@ function newDraft(q){
 function cbox(kind,val){return'<div class="cb2"><input class="cbi" data-cb="'+kind+'" autocomplete="off" dir="auto" value="'+esc(val)+'" placeholder="'+esc(t("search_ph"))+'"><div class="cbl" hidden></div></div>'}
 var CBC={};
 function cbItems(kind){var src=kind==="client"?S.clients:S.products,c=CBC[kind];if(c&&c.src===src&&c.dv===DV&&c.n===src.length)return c.v;var v=cbBuild(kind);CBC[kind]={src:src,dv:DV,n:src.length,v:v};return v}
-function cbBuild(kind){return kind==="client"?S.clients.map(function(c){return{label:c.name,sub:c.phone||c.contact||"",key:nz(c.name+" "+(c.contact||"")+" "+(c.phone||"")+" "+(c.email||"")),n:nz(c.name),val:String(c.id)}}):
- S.products.map(function(p){return{label:p.name,sub:money(p.price),key:nz(p.name+" "+(p.desc||"")),n:nz(p.name),val:String(p.id)}})}
+function cbBuild(kind){return kind==="client"?S.clients.map(function(c){return{label:c.name,sub:c.phone||c.contact||"",key:nz(c.name+" "+(c.contact||"")+" "+(c.phone||"")+" "+(c.email||"")),n:nz(c.name),val:String(c.id),r:c}}):
+ S.products.map(function(p){return{label:p.name,sub:money(p.price),key:nz(p.name+" "+(p.desc||"")),n:nz(p.name),val:String(p.id),r:p}})}
 function cbFilter(all,q){var tk=String(q||"").trim().split(/\s+/).map(nz).filter(Boolean);if(!tk.length)return all.slice(0,50);var out=[];
  for(var i=0;i<all.length;i++){var it=all[i],ok=true;for(var j=0;j<tk.length;j++)if(it.key.indexOf(tk[j])<0){ok=false;break}
   if(ok){var at=it.n.indexOf(tk[0]);out.push([at===0?0:at>0?1:2,i,it])}}
@@ -516,7 +520,7 @@ function qform(){var tb=cur(),dr=tb.draft,edit=!!dr.qid,ti=t(edit?"edit_q":"m_cr
  function curLabel(inp){var ln=inp.closest(".line");if(ln){var l=dr.lines[+ln.dataset.i];return l?l.name:""}var c=dr.clientId&&find(S.clients,dr.clientId);return c?c.name:dr.client}
  function cbPick(it,keep){var inp=CB.inp,kind=CB.kind,ln=inp.closest(".line");
   if(kind==="client"){dr.clientId=it.val;dr.client=it.label;inp.value=it.label;cbClose();touch();return}
-  var l=dr.lines[+ln.dataset.i],p=find(S.products,it.val);if(!p){cbClose();return}
+  var l=dr.lines[+ln.dataset.i],p=it.r;if(!p){cbClose();return}
   l.pid=String(p.id);l.name=p.name;l.desc=p.desc||"";l.price=p.price||0;inp.value=p.name;ln.querySelector('[data-lf="price"]').value=l.price;cbClose();touch();calc();
   if(!keep){var q2=ln.querySelector('[data-lf="qty"]');q2.focus();q2.select()}}
  var qf=$("qf");
