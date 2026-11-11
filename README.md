@@ -35,3 +35,10 @@ Four black-and-white A4 templates (classic, formal double, simple, compact). Cho
 Push a tag, e.g. `git tag v1.1.0 && git push origin v1.1.0`.
 GitHub Actions builds the installer and attaches it to the Release.
 You can also run it from Actions > Build Windows installer > Run workflow.
+
+## v1.3.0
+- Starts with Windows in the background (tray icon: open / copy address / exit); toggle in Settings.
+- Admin menu: users with granular permissions (create/edit/delete quotations, clients, products, requests, company, settings & templates), disable accounts, **login activity** (IP, device, sign-in/out, active devices with force sign-out).
+- Open `http://<server-ip>:3210` from any device on the network for the full interface (Excel import, print/PDF via browser, WhatsApp link). Allow the app in Windows Firewall on the server device.
+- Templates: company logo (auto black & white, width/position), extra text fields, header fields, size boxes.
+- Select and delete quotations; numbering starts at 1000 (configurable prefix/start in Settings).

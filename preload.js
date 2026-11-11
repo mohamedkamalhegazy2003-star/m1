@@ -7,5 +7,6 @@ contextBridge.exposeInMainWorld("api", {
   pickExcel: () => ipcRenderer.invoke("excel:pick"),
   savePdf: (o) => ipcRenderer.invoke("pdf:save", o),
   openWhatsApp: (o) => ipcRenderer.invoke("wa:open", o),
+  setBackground: (on) => ipcRenderer.invoke("bg:set", on),
   showFile: (p) => ipcRenderer.invoke("file:show", p)
 });
