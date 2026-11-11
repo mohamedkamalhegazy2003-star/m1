@@ -131,7 +131,7 @@ function effPerms(u) {
   if (Array.isArray(u.perms)) return u.perms.filter((p) => PERMS.indexOf(p) >= 0);
   return (PRESET[u.role] || []).slice();
 }
-const pub = (u) => ({ id: u.id, username: u.username, name: u.name, email: u.email || "", role: u.role, perms: effPerms(u), disabled: !!u.disabled });
+const pub = (u) => ({ id: u.id, username: u.username, name: u.name, email: u.email || "", phone: u.phone || "", role: u.role, perms: effPerms(u), disabled: !!u.disabled });
 const activeAdmins = () => users.filter((u) => u.role === "Admin" && !u.disabled).length;
 const cleanUsername = (s) => String(s || "").trim().toLowerCase();
 const validUsername = (s) => /^\S{2,40}$/.test(s);
@@ -348,7 +348,7 @@ async function handleApi(req, res, p) {
     if (!validPw(b.password)) return sendJson(res, 400, { error: "weak" });
     if (ROLES.indexOf(b.role) < 0) return sendJson(res, 400, { error: "bad_role" });
     const perms = cleanPerms(b.perms) || PRESET[b.role].slice();
-    const u = Object.assign({ id: nextUserId(), username, name: String(b.name || username).trim().slice(0, 100) || username, email: String(b.email || "").trim().slice(0, 200), role: b.role, perms, disabled: false }, await makeCred(b.password));
+    const u = Object.assign({ id: nextUserId(), username, name: String(b.name || username).trim().slice(0, 100) || username, email: String(b.email || "").trim().slice(0, 200), phone: String(b.phone || "").trim().slice(0, 30), role: b.role, perms, disabled: false }, await makeCred(b.password));
     users.push(u); persistUsers();
     return sendJson(res, 200, { user: pub(u) });
   }
@@ -381,6 +381,7 @@ async function handleApi(req, res, p) {
     }
     if (b.name !== undefined) t.name = String(b.name).trim().slice(0, 100) || t.name;
     if (b.email !== undefined) t.email = String(b.email).trim().slice(0, 200);
+    if (b.phone !== undefined) t.phone = String(b.phone).trim().slice(0, 30);
     if (isAdmin) {
       if (b.role !== undefined) { t.role = b.role; if (!Array.isArray(b.perms)) t.perms = PRESET[b.role].slice(); }
       if (Array.isArray(b.perms)) t.perms = cleanPerms(b.perms);
@@ -628,6 +629,13 @@ ipcMain.handle("wa:open", async (e, o) => {
   const phone = String((o && o.phone) || "").replace(/\D/g, "");
   if (!phone) return false;
   await shell.openExternal("https://wa.me/" + phone + "?text=" + encodeURIComponent(String((o && o.text) || "")));
+  return true;
+});
+
+ipcMain.handle("mail:open", async (e, o) => {
+  const to = String((o && o.to) || "").trim().slice(0, 200);
+  const q = "subject=" + encodeURIComponent(String((o && o.subject) || "").slice(0, 300)) + "&body=" + encodeURIComponent(String((o && o.body) || "").slice(0, 3000));
+  await shell.openExternal("mailto:" + encodeURIComponent(to).replace(/%40/g, "@") + "?" + q);
   return true;
 });
 
