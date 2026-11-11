@@ -169,7 +169,13 @@ function failed(key) {
   const a = attempts.get(key) || { n: 0, until: 0 };
   a.n++;
   if (a.n >= 5) a.until = Date.now() + Math.min(300, 30 * Math.pow(2, a.n - 5)) * 1000;
+  a.t = Date.now();
   attempts.set(key, a);
+  if (attempts.size > 5000) {
+    const now = Date.now();
+    attempts.forEach((v, k) => { if (v.until < now && now - (v.t || 0) > 3600000) attempts.delete(k); });
+    if (attempts.size > 20000) attempts.clear();
+  }
 }
 const isLocal = (req) => ipOf(req) === "127.0.0.1";
 
@@ -404,7 +410,19 @@ function serveXlsx(res) {
   } catch (e) { res.writeHead(404); res.end("Not found"); }
 }
 
+process.on("uncaughtException", (e) => { try { console.error("uncaught", e && e.message); } catch (x) {} });
+const SEC_HEADERS = {
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "no-referrer",
+  "Content-Security-Policy": "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'",
+};
 function handleRequest(req, res) {
+  for (const k in SEC_HEADERS) res.setHeader(k, SEC_HEADERS[k]);
+  try { return handleRequest2(req, res); }
+  catch (e) { try { if (!res.headersSent) res.writeHead(400); res.end(); } catch (e2) {} }
+}
+function handleRequest2(req, res) {
   let u;
   try { u = new URL(req.url, "http://localhost"); } catch (e) { res.writeHead(400); return res.end(); }
 
@@ -419,6 +437,7 @@ function handleRequest(req, res) {
   if (u.pathname === "/vendor/xlsx.js") return serveXlsx(res);
 
   const rel = u.pathname === "/" ? "index.html" : decodeURIComponent(u.pathname).replace(/^\/+/, "");
+  if (rel.indexOf("\0") >= 0) { res.writeHead(400); return res.end(); }
   const file = path.normalize(path.join(APP_DIR, rel));
   if (file.indexOf(APP_DIR + path.sep) !== 0 || file === path.join(APP_DIR, "setup.html")) { res.writeHead(403); return res.end(); }
   fs.stat(file, (e0, st) => {
