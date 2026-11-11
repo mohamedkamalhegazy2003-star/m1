@@ -239,14 +239,14 @@ function waNumber(p){var s=String(p).trim(),intl=/^(\+|00)/.test(s),d=digits(s).
 var M=[["g_quotations",[["m_create_q","qform"],["m_all_q","q:All"],["m_new_q","q:New"],["m_sent_q","q:Sent"]]],
 ["g_products",[["m_add_product","add:products"],["m_all_products","list:products"],["m_import_products","imp:products"]]],
 ["g_clients",[["m_add_client","add:clients"],["m_all_clients","list:clients"],["m_import_clients","imp:clients"]]],
-["g_admin",[["m_create_company","add:companies"],["m_company_details","list:companies"],["m_add_user","uadd"],["m_all_users","ulist"],["m_activity","activity"],["m_settings","settings"]]],
-["g_requests",[["m_req_add","add:requests"],["m_req_all","req:all"],["m_req_my","req:my"],["m_req_overdue","req:overdue"]]]];
+["g_admin",[["m_company_details","list:companies"],["m_add_user","uadd"],["m_all_users","ulist"],["m_activity","activity"],["m_settings","settings"]]],
+["g_requests",[["m_req_all","req:all"]]]];
 var ICONS={qform:"➕","q:All":"📄","q:New":"🆕","q:Sent":"📤","add:products":"➕","list:products":"📦","imp:products":"📥","add:clients":"➕","list:clients":"👥","imp:clients":"📥","add:companies":"🏢","list:companies":"🏢",uadd:"👤",ulist:"👥",activity:"🕘",settings:"⚙️","add:requests":"➕","req:all":"📋","req:my":"🙋","req:overdue":"⏰"};
 function ic(k){return ICONS[k]||"•"}
 function menu(){var h='<h1>'+esc(t("app_title"))+'</h1>';
  M.forEach(function(g){var items=g[1].filter(function(i){return allowed(i[1])});if(!items.length)return;
  var o=true;h+='<div class="g'+(o?" open":"")+'"><button data-g="'+g[0]+'"><span>'+esc(t(g[0]))+'</span><span class="ar">›</span></button><div class="sub">';
- items.forEach(function(s){h+='<button data-v="'+s[1]+'" class="'+(view===s[1]?"on":"")+'"><span class="ic">'+ic(s[1])+'</span><span>'+esc(t(s[0]))+'</span></button>'});h+='</div></div>'});
+ items.forEach(function(s){h+='<button data-v="'+s[1]+'" class="'+(view===s[1]?"on":"")+'"><span>'+esc(t(s[0]))+'</span></button>'});h+='</div></div>'});
  h+='<div class="me">'+esc(ME?ME.name:"")+(ME?' · <span class="mu">'+esc(tv(ME.role))+'</span>':"")+'<button class="lg" id="lg">'+esc(t("lang_btn"))+'</button>'+(REMOTE?'<button class="lg" id="lo">'+esc(t("logout"))+'</button>':"")+'</div>';$("side").innerHTML=h}
 $("side").onclick=function(e){var b=e.target.closest("button");if(!b)return;
  if(b.id==="lg"){setLang(lang==="ar"?"en":"ar");return}
@@ -285,7 +285,7 @@ function addForm(k,id){var c=F[k],rec=id?find(S[k],id):null;if(id&&!rec){go(c.to
    Object.assign(rec,r)}
   else{if(k==="requests"){r.owner=ME.name;r.status="Open";r.created=today}r.id=nextId();S[k].push(r)}
   if(await save())go(c.to)}}
-function list(k){var cols=L[k],h='<h2>'+esc(t("list_"+k))+'</h2><div class="card wrap">';
+function list(k){var cols=L[k],h='<h2>'+esc(t("list_"+k))+'</h2>'+(k==="companies"&&canK(k)?'<div class="bt"><button class="btn" data-a="addnew" data-k="companies">+ '+esc(t("m_create_company"))+'</button></div>':"")+'<div class="card wrap">';
  if(!S[k].length)h+='<div class="empty">'+esc(t("empty"))+'</div>';
  else h+='<table><tr>'+cols.map(function(c){return'<th>'+esc(t("c_"+c))+'</th>'}).join("")+'<th></th></tr>'+S[k].map(function(r){return'<tr>'+cols.map(function(c){
   var x=r[c];if(c==="price")x=money(x);else if(c==="type"||c==="role")x=tv(x);return'<td>'+esc(x)+'</td>'}).join("")+
@@ -780,6 +780,7 @@ $("v").onchange=function(e){var el=e.target;
  var n=document.querySelectorAll(".qsel:checked").length,b=$("qdel");if(b){b.disabled=!n;b.textContent=t("del_sel")+(n?" ("+n+")":"")}};
 $("v").onclick=async function(e){var b=e.target.closest("[data-a]");if(!b)return;var d=b.dataset;
  if(d.a==="edit")go("edit:"+d.k+":"+d.id);
+ else if(d.a==="addnew")go("add:"+d.k);
  else if(d.a==="del"){if(!canK(d.k)||!confirm(t("confirm_del")))return;S[d.k]=S[d.k].filter(function(r){return String(r.id)!==d.id});if(await save())render()}
  else if(d.a==="done"){var r=find(S.requests,d.id);if(r&&can("requests")){r.status="Done";if(await save())render()}}
  else if(d.a==="mkq"){var rq=find(S.requests,d.id);go("qform");var nt=cur();if(rq&&nt.draft){var rc=S.clients.filter(function(c){return c.name===rq.client})[0];nt.draft.client=rq.client;nt.draft.clientId=rc?String(rc.id):"";nt.draft.dirty=true;render()}}
