@@ -119,7 +119,7 @@ u_perms:"Permissions",u_on:"Active",u_off:"Disabled",u_active:"Account is active
 ev_setup:"Admin account created",ev_login:"Signed in",ev_login_failed:"Failed sign-in",ev_locked:"Locked (too many attempts)",ev_logout:"Signed out",ev_expired:"Session expired",ev_revoked:"Signed out by admin",err_disabled:"This account is disabled.",
 d_logo:"Company logo",logo_pick:"Choose image",logo_remove:"Remove logo",logo_hint:"Any image. It is converted to black and white and resized automatically.",d_logow:"Logo width (mm)",d_logopos:"Logo position",o_start:"Start",o_center:"Center",o_end:"End",o_sans:"Sans-serif",o_serif:"Serif",
 d_sub_ar:"Line under company name - Arabic",d_sub_en:"Line under company name - English",d_intro_ar:"Text above the items - Arabic",d_intro_en:"Text above the items - English",d_extra:"Extra header fields (one per line, as Label: Value)",d_fam:"Font",d_titlesize:"Title size",d_cnsize:"Company name size",d_rowpad:"Row spacing",d_sigh:"Signature box height (mm)",
-sel_all:"Select all",del_sel:"Delete selected",confirm_del_q:"Delete {n} quotation(s)? This cannot be undone.",deleted_n:"{n} quotation(s) deleted.",s_qstart:"Quotation numbers start from",s_qprefix:"Quotation number prefix",
+sel_all:"Select all",show_more:"Show {n} more",del_sel:"Delete selected",confirm_del_q:"Delete {n} quotation(s)? This cannot be undone.",deleted_n:"{n} quotation(s) deleted.",s_qstart:"Quotation numbers start from",s_qprefix:"Quotation number prefix",
 s_autostart:"Start with Windows and keep running in the background",s_autostart_hint:"The server keeps working when the window is closed. Use the tray icon to open or exit.",s_conn:"Connected to the server at:",s_conn_hint:"You are using the app from the browser. Excel import, PDF (via the print dialog) and WhatsApp links work here too.",
 pdf_browser:"In the print dialog choose \"Save as PDF\".",wa_browser:"WhatsApp is opening. Use \"Save as PDF\" first and attach the file to the chat."
 },ar:{
@@ -169,7 +169,7 @@ u_perms:"الصلاحيات",u_on:"مفعّل",u_off:"موقوف",u_active:"ال
 ev_setup:"إنشاء حساب المدير",ev_login:"تسجيل دخول",ev_login_failed:"محاولة دخول فاشلة",ev_locked:"إيقاف مؤقت (محاولات كثيرة)",ev_logout:"تسجيل خروج",ev_expired:"انتهاء الجلسة",ev_revoked:"إنهاء الجلسة بواسطة المدير",err_disabled:"هذا الحساب موقوف.",
 d_logo:"شعار الشركة",logo_pick:"اختيار صورة",logo_remove:"إزالة الشعار",logo_hint:"أي صورة. تُحوّل تلقائياً إلى أبيض وأسود ويُضبط حجمها.",d_logow:"عرض الشعار (مم)",d_logopos:"مكان الشعار",o_start:"بداية السطر",o_center:"المنتصف",o_end:"نهاية السطر",o_sans:"بدون زوائد",o_serif:"بزوائد",
 d_sub_ar:"سطر تحت اسم الشركة - عربي",d_sub_en:"سطر تحت اسم الشركة - إنجليزي",d_intro_ar:"نص قبل الأصناف - عربي",d_intro_en:"نص قبل الأصناف - إنجليزي",d_extra:"حقول إضافية في الترويسة (كل حقل في سطر بصيغة: الاسم: القيمة)",d_fam:"الخط",d_titlesize:"حجم العنوان",d_cnsize:"حجم اسم الشركة",d_rowpad:"المسافة بين الصفوف",d_sigh:"ارتفاع خانة التوقيع (مم)",
-sel_all:"تحديد الكل",del_sel:"حذف المحدد",confirm_del_q:"حذف {n} عرض سعر؟ لا يمكن التراجع.",deleted_n:"تم حذف {n} عرض سعر.",s_qstart:"ترقيم العروض يبدأ من",s_qprefix:"بادئة رقم العرض",
+sel_all:"تحديد الكل",show_more:"عرض {n} أخرى",del_sel:"حذف المحدد",confirm_del_q:"حذف {n} عرض سعر؟ لا يمكن التراجع.",deleted_n:"تم حذف {n} عرض سعر.",s_qstart:"ترقيم العروض يبدأ من",s_qprefix:"بادئة رقم العرض",
 s_autostart:"التشغيل مع ويندوز والاستمرار في الخلفية",s_autostart_hint:"يستمر السيرفر في العمل عند إغلاق النافذة. استخدم أيقونة الشريط لفتح البرنامج أو إنهائه.",s_conn:"متصل بالسيرفر على:",s_conn_hint:"أنت تستخدم البرنامج من المتصفح. استيراد إكسيل وPDF (من نافذة الطباعة) وروابط واتساب تعمل هنا أيضاً.",
 pdf_browser:"في نافذة الطباعة اختر \"حفظ كـ PDF\".",wa_browser:"يتم فتح واتساب. احفظ العرض كـ PDF أولاً وأرفقه في المحادثة."
 }};
@@ -285,12 +285,19 @@ function addForm(k,id){var c=F[k],rec=id?find(S[k],id):null;if(id&&!rec){go(c.to
    Object.assign(rec,r)}
   else{if(k==="requests"){r.owner=ME.name;r.status="Open";r.created=today}r.id=nextId();S[k].push(r)}
   if(await save())go(c.to)}}
-function list(k){var cols=L[k],h='<h2>'+esc(t("list_"+k))+'</h2>'+(k==="companies"&&canK(k)?'<div class="bt"><button class="btn" data-a="addnew" data-k="companies">+ '+esc(t("m_create_company"))+'</button></div>':"")+'<div class="card wrap">';
- if(!S[k].length)h+='<div class="empty">'+esc(t("empty"))+'</div>';
- else h+='<table><tr>'+cols.map(function(c){return'<th>'+esc(t("c_"+c))+'</th>'}).join("")+'<th></th></tr>'+S[k].map(function(r){return'<tr>'+cols.map(function(c){
-  var x=r[c];if(c==="price")x=money(x);else if(c==="type"||c==="role")x=tv(x);return'<td>'+esc(x)+'</td>'}).join("")+
-  '<td>'+(canK(k)?'<button class="btn s o" data-a="edit" data-k="'+k+'" data-id="'+r.id+'">'+esc(t("edit"))+'</button><button class="btn s o" data-a="del" data-k="'+k+'" data-id="'+r.id+'">'+esc(t("del"))+'</button>':"")+'</td></tr>'}).join("")+'</table>';
- v(h+'</div>')}
+/* big lists: search box + only the first rows are drawn (the rest on request) so pages open instantly */
+function filt(keys,q){var tk=nz(q).split(/\s+/).filter(Boolean),idx=[];for(var i=0;i<keys.length;i++){var ok=true;for(var j=0;j<tk.length;j++)if(keys[i].indexOf(tk[j])<0){ok=false;break}if(ok)idx.push(i)}return idx}
+function moreBtn(n,lim){return n>lim?'<p><button class="btn o" id="lmore">'+esc(t("show_more",{n:n-lim}))+'</button></p>':""}
+function list(k){var cols=L[k],h='<h2>'+esc(t("list_"+k))+'</h2>'+(k==="companies"&&canK(k)?'<div class="bt"><button class="btn" data-a="addnew" data-k="companies">+ '+esc(t("m_create_company"))+'</button></div>':"");
+ if(!S[k].length){v(h+'<div class="card wrap"><div class="empty">'+esc(t("empty"))+'</div></div>');return}
+ v(h+'<div class="bt"><input id="lq" dir="auto" autocomplete="off" placeholder="'+esc(t("search_ph"))+'" style="max-width:380px"><span class="mu" id="lc"></span></div><div class="card wrap" id="lt"></div>');
+ var keys=S[k].map(function(r){return nz(cols.map(function(c){return r[c]}).join(" "))}),lim=100,tm;
+ function draw(){var idx=filt(keys,$("lq").value);$("lc").textContent=idx.length+" / "+S[k].length;
+  $("lt").innerHTML=(idx.length?'<table><tr>'+cols.map(function(c){return'<th>'+esc(t("c_"+c))+'</th>'}).join("")+'<th></th></tr>'+idx.slice(0,lim).map(function(n){var r=S[k][n];return'<tr>'+cols.map(function(c){
+   var x=r[c];if(c==="price")x=money(x);else if(c==="type"||c==="role")x=tv(x);return'<td>'+esc(x)+'</td>'}).join("")+
+   '<td>'+(canK(k)?'<button class="btn s o" data-a="edit" data-k="'+k+'" data-id="'+r.id+'">'+esc(t("edit"))+'</button><button class="btn s o" data-a="del" data-k="'+k+'" data-id="'+r.id+'">'+esc(t("del"))+'</button>':"")+'</td></tr>'}).join("")+'</table>':'<div class="empty">'+esc(t("no_match"))+'</div>')+moreBtn(idx.length,lim);
+  var mb=$("lmore");if(mb)mb.onclick=function(){lim+=200;draw()}}
+ draw();$("lq").oninput=function(){lim=100;clearTimeout(tm);tm=setTimeout(draw,120)}}
 
 /* ================= requests ================= */
 function reqList(m){var rs=S.requests.filter(function(r){var od=r.status!=="Done"&&r.due<today;
@@ -478,7 +485,9 @@ function tplEditor(){var tb=cur(),dr=tb.draft,dl=tb.dl||lang,bi=BUILTIN.filter(f
 /* serial: prefix + number, never below the configured start (default 1000), always above the highest existing number */
 function nextNo(){var st=S.settings,pre=st.qprefix!=null?String(st.qprefix):"Q-",from=Math.max(1,parseInt(st.qstart,10)||1000),
  mx=S.quotations.reduce(function(m,q){return Math.max(m,parseInt(String(q.no).replace(/\D/g,""),10)||0)},0);return pre+Math.max(mx+1,from)}
-function qcl(q){return(q.clientId&&find(S.clients,q.clientId))||S.clients.filter(function(c){return c.name===q.client})[0]||null}
+var CLM=null;
+function qcl(q){if(!CLM||CLM.src!==S.clients||CLM.dv!==DV||CLM.n!==S.clients.length){CLM={src:S.clients,dv:DV,n:S.clients.length,id:{},nm:{}};S.clients.forEach(function(c){CLM.id[String(c.id)]=c;if(!CLM.nm[c.name])CLM.nm[c.name]=c})}
+ return(q.clientId&&CLM.id[String(q.clientId)])||CLM.nm[q.client]||null}
 function qcn(q){var c=qcl(q);return c?c.name:q.client}
 function lineOf(p){return{pid:String(p.id),name:p.name,desc:p.desc||"",qty:1,price:p.price||0}}
 function newDraft(q){
@@ -553,13 +562,16 @@ function qform(){var tb=cur(),dr=tb.draft,edit=!!dr.qid,ti=t(edit?"edit_q":"m_cr
   tb.view="qv:"+rec.id;tb.draft=null;menu();render()}}
 function qlist(st){var rs=S.quotations.filter(function(q){return st==="All"||q.status===st}),cd=can("q_del"),ce=can("q_edit"),
  h='<h2>'+esc(t({All:"m_all_q",New:"m_new_q",Sent:"m_sent_q",Accepted:"m_accepted",Declined:"m_declined"}[st]))+'</h2>';
- if(cd&&rs.length)h+='<div class="bt"><label class="pk" style="margin:0"><input type="checkbox" id="qall"> '+esc(t("sel_all"))+'</label><button class="btn o s" id="qdel" data-a="qdel-sel" disabled>'+esc(t("del_sel"))+'</button></div>';
- h+='<div class="card wrap">';
- if(!rs.length)h+='<div class="empty">'+esc(t("no_q"))+'</div>';
- else h+='<table><tr>'+(cd?'<th style="width:32px"></th>':"")+'<th>'+esc(t("th_no"))+'</th><th>'+esc(t("c_client"))+'</th><th>'+esc(t("th_date"))+'</th><th>'+esc(t("items"))+'</th><th>'+esc(t("total"))+'</th><th>'+esc(t("th_status"))+'</th><th></th></tr>'+rs.map(function(q){var a="";
- if(ce&&q.status==="New")a='<button class="btn s" data-a="st" data-s="Sent" data-id="'+q.id+'">'+esc(t("send_client"))+'</button><button class="btn s o" data-a="qedit" data-id="'+q.id+'">'+esc(t("edit"))+'</button>';
- return'<tr>'+(cd?'<td><input type="checkbox" class="qsel" data-id="'+q.id+'"></td>':"")+'<td>'+esc(q.no)+'</td><td>'+esc(qcn(q))+'</td><td>'+esc(q.date)+'</td><td>'+q.items.map(function(i){return esc(i.name)+" ×"+esc(i.qty)}).join(lang==="ar"?"، ":", ")+'</td><td>'+money(q.total)+'</td><td><span class="tag '+q.status+'">'+esc(tv(q.status))+'</span></td><td>'+a+'<button class="btn s o" data-a="view" data-id="'+q.id+'">'+esc(t("print_a4"))+'</button>'+(cd?'<button class="btn s o" data-a="qdel1" data-id="'+q.id+'">'+esc(t("del"))+'</button>':"")+'</td></tr>'}).join("")+'</table>';
- v(h+'</div>')}
+ if(!rs.length){v(h+'<div class="card wrap"><div class="empty">'+esc(t("no_q"))+'</div></div>');return}
+ h+='<div class="bt"><input id="lq" dir="auto" autocomplete="off" placeholder="'+esc(t("search_ph"))+'" style="max-width:340px">'+(cd?'<label class="pk" style="margin:0"><input type="checkbox" id="qall"> '+esc(t("sel_all"))+'</label><button class="btn o s" id="qdel" data-a="qdel-sel" disabled>'+esc(t("del_sel"))+'</button>':"")+'<span class="mu" id="lc"></span></div><div class="card wrap" id="lt"></div>';
+ v(h);rs=rs.slice().reverse();
+ var keys=rs.map(function(q){return nz(q.no+" "+qcn(q)+" "+q.items.map(function(i){return i.name}).join(" "))}),lim=100,tm;
+ function draw(){var idx=filt(keys,$("lq").value);$("lc").textContent=idx.length+" / "+rs.length;if($("qall"))$("qall").checked=false;
+  $("lt").innerHTML=(idx.length?'<table><tr>'+(cd?'<th style="width:32px"></th>':"")+'<th>'+esc(t("th_no"))+'</th><th>'+esc(t("c_client"))+'</th><th>'+esc(t("th_date"))+'</th><th>'+esc(t("items"))+'</th><th>'+esc(t("total"))+'</th><th>'+esc(t("th_status"))+'</th><th></th></tr>'+idx.slice(0,lim).map(function(n){var q=rs[n],a="";
+  if(ce&&q.status==="New")a='<button class="btn s" data-a="st" data-s="Sent" data-id="'+q.id+'">'+esc(t("send_client"))+'</button><button class="btn s o" data-a="qedit" data-id="'+q.id+'">'+esc(t("edit"))+'</button>';
+  return'<tr>'+(cd?'<td><input type="checkbox" class="qsel" data-id="'+q.id+'"></td>':"")+'<td>'+esc(q.no)+'</td><td>'+esc(qcn(q))+'</td><td>'+esc(q.date)+'</td><td>'+q.items.map(function(i){return esc(i.name)+" ×"+esc(i.qty)}).join(lang==="ar"?"، ":", ")+'</td><td>'+money(q.total)+'</td><td><span class="tag '+q.status+'">'+esc(tv(q.status))+'</span></td><td>'+a+'<button class="btn s o" data-a="view" data-id="'+q.id+'">'+esc(t("print_a4"))+'</button>'+(cd?'<button class="btn s o" data-a="qdel1" data-id="'+q.id+'">'+esc(t("del"))+'</button>':"")+'</td></tr>'}).join("")+'</table>':'<div class="empty">'+esc(t("no_match"))+'</div>')+moreBtn(idx.length,lim);
+  var mb=$("lmore");if(mb)mb.onclick=function(){lim+=200;draw()};var b=$("qdel");if(b){b.disabled=true;b.textContent=t("del_sel")}}
+ draw();$("lq").oninput=function(){lim=100;clearTimeout(tm);tm=setTimeout(draw,120)}}
 function qview(id){var q=find(S.quotations,id),tb=cur();if(!q){go("q:All");return}
  var tp=tplById(tb.tpl||S.settings.defaultTpl),dl=tb.dl||lang;
  v('<h2>'+esc(q.no)+' – '+esc(qcn(q))+'</h2><div class="bt"><button class="btn" data-a="print">'+esc(t("print_a4"))+'</button><button class="btn o" data-a="pdf" data-id="'+q.id+'">'+esc(t("pdf"))+'</button><button class="btn g2" data-a="wa" data-id="'+q.id+'">'+esc(t("wa"))+'</button>'+

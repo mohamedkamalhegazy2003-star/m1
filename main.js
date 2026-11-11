@@ -5,6 +5,7 @@ const os = require("os");
 const http = require("http");
 const crypto = require("crypto");
 const util = require("util");
+const zlib = require("zlib");
 
 let XLSX = null;
 try { XLSX = require("xlsx"); } catch (e) { /* reported to the UI when an import is attempted */ }
@@ -45,13 +46,27 @@ function loadState() {
   try {
     const s = JSON.parse(fs.readFileSync(dataFile(), "utf8"));
     state = { rev: Number(s.rev) || 0, data: s.data || null };
+    dataJsonCache = { rev: -1, json: "null" };
   } catch (e) { state = { rev: 0, data: null }; }
 }
-function persistState() {
+/* Saves answer immediately; the file is written a moment later (and always before the app exits). */
+let dirtyState = false, persistTimer = null, dataJsonCache = { rev: -1, json: "null" };
+function flushState() {
+  if (persistTimer) { clearTimeout(persistTimer); persistTimer = null; }
+  if (!dirtyState) return;
   const tmp = dataFile() + ".tmp";
   fs.mkdirSync(path.dirname(dataFile()), { recursive: true });
   fs.writeFileSync(tmp, JSON.stringify(state));
   fs.renameSync(tmp, dataFile());
+  dirtyState = false;
+}
+function persistState() {
+  dirtyState = true;
+  if (!persistTimer) persistTimer = setTimeout(() => { persistTimer = null; try { flushState(); } catch (e) { console.error("write failed", e); } }, 400);
+}
+function stateJson() {
+  if (dataJsonCache.rev !== state.rev) dataJsonCache = { rev: state.rev, json: JSON.stringify(state.data) };
+  return dataJsonCache.json;
 }
 
 /* ---------- users, permissions, authentication (server side; passwords never leave this process) ---------- */
@@ -225,10 +240,18 @@ const MIME = {
   ".png": "image/png", ".svg": "image/svg+xml", ".ico": "image/x-icon"
 };
 
-function sendJson(res, code, obj) {
-  res.writeHead(code, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
-  res.end(JSON.stringify(obj));
+function sendRaw(res, code, body, headers) {
+  const h = Object.assign({ "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "Vary": "Accept-Encoding" }, headers);
+  const ae = (res.req && res.req.headers["accept-encoding"]) || "";
+  if (body.length > 1024 && /\bgzip\b/.test(ae)) {
+    return zlib.gzip(body, { level: 1 }, (err, z) => {
+      if (err) { res.writeHead(code, h); return res.end(body); }
+      h["Content-Encoding"] = "gzip"; res.writeHead(code, h); res.end(z);
+    });
+  }
+  res.writeHead(code, h); res.end(body);
 }
+function sendJson(res, code, obj) { sendRaw(res, code, JSON.stringify(obj), { "Content-Type": "application/json; charset=utf-8" }); }
 
 async function handleApi(req, res, p) {
   const m = req.method, ip = ipOf(req), ua = uaShort(req);
@@ -274,7 +297,7 @@ async function handleApi(req, res, p) {
     return sendJson(res, 200, { ok: true });
   }
 
-  if (p === "/api/state" && m === "GET") return sendJson(res, 200, { rev: state.rev, data: state.data, users: users.map(pub) });
+  if (p === "/api/state" && m === "GET") return sendRaw(res, 200, '{"rev":' + state.rev + ",\"data\":" + stateJson() + ",\"users\":" + JSON.stringify(users.map(pub)) + "}", { "Content-Type": "application/json; charset=utf-8" });
   if (p === "/api/rev" && m === "GET") return sendJson(res, 200, { rev: state.rev });
 
   if (p === "/api/state" && m === "PUT") {
@@ -397,10 +420,14 @@ function handleRequest(req, res) {
   const rel = u.pathname === "/" ? "index.html" : decodeURIComponent(u.pathname).replace(/^\/+/, "");
   const file = path.normalize(path.join(APP_DIR, rel));
   if (file.indexOf(APP_DIR + path.sep) !== 0 || file === path.join(APP_DIR, "setup.html")) { res.writeHead(403); return res.end(); }
-  fs.readFile(file, (err, buf) => {
-    if (err) { res.writeHead(404); return res.end("Not found"); }
-    res.writeHead(200, { "Content-Type": MIME[path.extname(file).toLowerCase()] || "application/octet-stream", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
-    res.end(buf);
+  fs.stat(file, (e0, st) => {
+    if (e0 || !st.isFile()) { res.writeHead(404); return res.end("Not found"); }
+    const etag = '"' + st.size + "-" + Math.round(st.mtimeMs) + '"';
+    if (req.headers["if-none-match"] === etag) { res.writeHead(304, { ETag: etag }); return res.end(); }
+    fs.readFile(file, (err, buf) => {
+      if (err) { res.writeHead(404); return res.end("Not found"); }
+      sendRaw(res, 200, buf, { "Content-Type": MIME[path.extname(file).toLowerCase()] || "application/octet-stream", "Cache-Control": "no-cache", ETag: etag });
+    });
   });
 }
 
@@ -608,7 +635,8 @@ ipcMain.handle("file:show", (e, p) => { if (p) shell.showItemInFolder(String(p))
 
 /* ---------- lifecycle ---------- */
 app.on("second-instance", () => showWin());
-app.on("before-quit", () => { quitting = true; });
+process.on("exit", () => { try { flushState(); } catch (e) {} });
+app.on("before-quit", () => { quitting = true; try { flushState(); } catch (e) {} });
 
 app.whenReady().then(() => {
   Menu.setApplicationMenu(null);
