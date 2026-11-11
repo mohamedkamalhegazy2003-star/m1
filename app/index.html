@@ -65,6 +65,25 @@ body.lo aside,body.lo main{display:none}
 @media(max-width:760px){body{display:block}aside{position:fixed;z-index:5;left:0;top:0;transform:translateX(-100%);transition:transform .2s;padding-top:calc(20px + env(safe-area-inset-top,0px))}
 [dir=rtl] aside{left:auto;right:0;transform:translateX(100%)}aside.show,[dir=rtl] aside.show{transform:none}
 #mb{display:block;margin-bottom:12px}main{padding:16px}#tabs{margin:-16px -16px 14px}.line{grid-template-columns:1fr 1fr}}
+/* phones: cards instead of wide tables, one-column forms, bigger touch targets */
+@media(max-width:760px){
+main{padding:12px}#tabs{margin:-12px -12px 12px}.tb{min-width:70px;max-width:150px}
+main h2{font-size:20px;margin-bottom:12px}.card{padding:12px}
+.wrap{overflow:visible}table{min-width:0;display:block}tbody{display:block}
+tr.hdr{display:none}tr{display:block;border:1px solid var(--bd);border-radius:10px;margin-bottom:10px;padding:4px 10px;background:var(--card)}
+td{display:flex;justify-content:space-between;align-items:center;gap:12px;border:0;padding:6px 0;text-align:end}
+td::before{content:attr(data-l);color:var(--mu);font-size:13px;flex:none;text-align:start}
+td[data-l=""]::before,td:not([data-l])::before{display:none}
+td[data-l=""],td:not([data-l]){flex-wrap:wrap;justify-content:flex-start}
+td.hm{display:none}
+.grid{grid-template-columns:1fr}
+.line{grid-template-columns:1fr 1fr auto}.line .cb2{grid-column:1/-1}
+.btn{padding:12px 16px}.btn.s{padding:9px 14px;margin-bottom:4px}
+.bt{gap:6px}.bt input,.bt select{flex:1 1 100%;max-width:none!important}
+.te{grid-template-columns:1fr}.paper{padding:8px}
+.pg2{grid-template-columns:1fr}
+.lb{margin-top:3vh}
+}
 </style></head><body>
 <aside id="side"></aside>
 <main><div id="tabs"></div><button class="btn o" id="mb">☰</button><div id="v"></div></main>
@@ -293,7 +312,7 @@ function list(k){var cols=L[k],h='<h2>'+esc(t("list_"+k))+'</h2>'+(k==="companie
  v(h+'<div class="bt"><input id="lq" dir="auto" autocomplete="off" placeholder="'+esc(t("search_ph"))+'" style="max-width:380px"><span class="mu" id="lc"></span></div><div class="card wrap" id="lt"></div>');
  var keys=S[k].map(function(r){return nz(cols.map(function(c){return r[c]}).join(" "))}),lim=100,tm;
  function draw(){var idx=filt(keys,$("lq").value);$("lc").textContent=idx.length+" / "+S[k].length;
-  $("lt").innerHTML=(idx.length?'<table><tr>'+cols.map(function(c){return'<th>'+esc(t("c_"+c))+'</th>'}).join("")+'<th></th></tr>'+idx.slice(0,lim).map(function(n){var r=S[k][n];return'<tr>'+cols.map(function(c){
+  $("lt").innerHTML=(idx.length?'<table><tr>'+cols.map(function(c){return'<th'+(/^(desc|email|contact)$/.test(c)?' class="hm"':"")+'>'+esc(t("c_"+c))+'</th>'}).join("")+'<th></th></tr>'+idx.slice(0,lim).map(function(n){var r=S[k][n];return'<tr>'+cols.map(function(c){
    var x=r[c];if(c==="price")x=money(x);else if(c==="type"||c==="role")x=tv(x);return'<td>'+esc(x)+'</td>'}).join("")+
    '<td>'+(canK(k)?'<button class="btn s o" data-a="edit" data-k="'+k+'" data-id="'+r.id+'">'+esc(t("edit"))+'</button><button class="btn s o" data-a="del" data-k="'+k+'" data-id="'+r.id+'">'+esc(t("del"))+'</button>':"")+'</td></tr>'}).join("")+'</table>':'<div class="empty">'+esc(t("no_match"))+'</div>')+moreBtn(idx.length,lim);
   var mb=$("lmore");if(mb)mb.onclick=function(){lim+=200;draw()}}
@@ -569,7 +588,7 @@ function qlist(st){var rs=S.quotations.filter(function(q){return st==="All"||q.s
  v(h);rs=rs.slice().reverse();
  var keys=rs.map(function(q){return nz(q.no+" "+qcn(q)+" "+q.items.map(function(i){return i.name}).join(" "))}),lim=100,tm;
  function draw(){var idx=filt(keys,$("lq").value);$("lc").textContent=idx.length+" / "+rs.length;if($("qall"))$("qall").checked=false;
-  $("lt").innerHTML=(idx.length?'<table><tr>'+(cd?'<th style="width:32px"></th>':"")+'<th>'+esc(t("th_no"))+'</th><th>'+esc(t("c_client"))+'</th><th>'+esc(t("th_date"))+'</th><th>'+esc(t("items"))+'</th><th>'+esc(t("total"))+'</th><th>'+esc(t("th_status"))+'</th><th></th></tr>'+idx.slice(0,lim).map(function(n){var q=rs[n],a="";
+  $("lt").innerHTML=(idx.length?'<table><tr>'+(cd?'<th style="width:32px"></th>':"")+'<th>'+esc(t("th_no"))+'</th><th>'+esc(t("c_client"))+'</th><th>'+esc(t("th_date"))+'</th><th class="hm">'+esc(t("items"))+'</th><th>'+esc(t("total"))+'</th><th>'+esc(t("th_status"))+'</th><th></th></tr>'+idx.slice(0,lim).map(function(n){var q=rs[n],a="";
   if(ce&&q.status==="New")a='<button class="btn s" data-a="st" data-s="Sent" data-id="'+q.id+'">'+esc(t("send_client"))+'</button><button class="btn s o" data-a="qedit" data-id="'+q.id+'">'+esc(t("edit"))+'</button>';
   return'<tr>'+(cd?'<td><input type="checkbox" class="qsel" data-id="'+q.id+'"></td>':"")+'<td>'+esc(q.no)+'</td><td>'+esc(qcn(q))+'</td><td>'+esc(q.date)+'</td><td>'+q.items.map(function(i){return esc(i.name)+" ×"+esc(i.qty)}).join(lang==="ar"?"، ":", ")+'</td><td>'+money(q.total)+'</td><td><span class="tag '+q.status+'">'+esc(tv(q.status))+'</span></td><td>'+a+'<button class="btn s o" data-a="view" data-id="'+q.id+'">'+esc(t("print_a4"))+'</button>'+(cd?'<button class="btn s o" data-a="qdel1" data-id="'+q.id+'">'+esc(t("del"))+'</button>':"")+'</td></tr>'}).join("")+'</table>':'<div class="empty">'+esc(t("no_match"))+'</div>')+moreBtn(idx.length,lim);
   var mb=$("lmore");if(mb)mb.onclick=function(){lim+=200;draw()};var b=$("qdel");if(b){b.disabled=true;b.textContent=t("del_sel")}}
@@ -822,6 +841,13 @@ $("v").onclick=async function(e){var b=e.target.closest("[data-a]");if(!b)return
   if(S.settings.defaultTpl===d.id)S.settings.defaultTpl="classic";if(await save())render()}
  else if(d.a==="imp-pick")impPick(view.split(":")[1]);
  else if(d.a==="imp-go")impGo()};
+/* phone layout helpers: label table cells from their column headers, fit the A4 preview to the screen */
+function mobLabel(){[].forEach.call(document.querySelectorAll("#v table"),function(tb){if(tb.classList.contains("mt")||tb.classList.contains("tt"))return;var hs=null;
+ [].forEach.call(tb.rows,function(r){if(r.cells.length&&r.cells[0].tagName==="TH"){hs=[].map.call(r.cells,function(c){return{t:c.textContent.trim(),hm:c.classList.contains("hm")}});r.classList.add("hdr");return}
+  if(!hs)return;[].forEach.call(r.cells,function(c,j){var h=hs[j];if(h){c.setAttribute("data-l",h.t);if(h.hm)c.classList.add("hm")}})})})}
+function fitPaper(){[].forEach.call(document.querySelectorAll("#v .paper"),function(p){var f=p.querySelector("iframe");if(!f)return;var k=Math.min(p.classList.contains("sm")?.62:1,(p.clientWidth-24)/794);f.style.zoom=k<1?String(k):""})}
+(function(){var tm;new MutationObserver(function(){clearTimeout(tm);tm=setTimeout(function(){mobLabel();fitPaper()},30)}).observe($("v"),{childList:true,subtree:true});addEventListener("resize",function(){fitPaper()});
+ document.addEventListener("click",function(e){var sd=$("side");if(sd.classList.contains("show")&&!e.target.closest("#side,#mb"))sd.classList.remove("show")})})();
 function render(){var tb=cur();view=tb.view;var p=view.split(":"),a=p[0],b=p[1];
  editing=a==="add"||a==="edit"||a==="imp"||a==="qform"||a==="qedit"||a==="settings"||a==="uadd"||a==="uedit"||a==="tpl";
  renderTabs();
