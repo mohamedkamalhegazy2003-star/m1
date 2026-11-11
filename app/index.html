@@ -9,31 +9,32 @@ padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bott
 *,*:before,*:after{box-sizing:inherit}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 /* Arabic-capable font stack first so Arabic text is shaped and spaced correctly */
-body{margin:0;font:15px/1.6 "Segoe UI",Tahoma,"Noto Naskh Arabic","Noto Sans Arabic",system-ui,-apple-system,Roboto,Arial,sans-serif;background:var(--bg);color:var(--tx);display:flex;min-height:100vh}
+body{margin:0;font:16px/1.6 "Segoe UI",Tahoma,"Noto Naskh Arabic","Noto Sans Arabic",system-ui,-apple-system,Roboto,Arial,sans-serif;background:var(--bg);color:var(--tx);display:flex;min-height:100vh}
 aside{width:250px;background:var(--side);color:#fff;padding:20px 12px;flex-shrink:0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
 aside h1{font-size:18px;margin:4px 10px 20px;font-weight:700}
-.g>button,.sub button{all:unset;display:flex;align-items:center;gap:10px;width:100%;padding:10px;border-radius:8px;cursor:pointer;box-sizing:border-box;font-size:14px;text-align:start}
+.g>button,.sub button{all:unset;display:flex;align-items:center;gap:10px;width:100%;padding:11px 10px;border-radius:8px;cursor:pointer;box-sizing:border-box;font-size:15px;text-align:start}
 .g>button{font-weight:600}.g>button:hover,.sub button:hover{background:var(--side2)}
 .g>button .ar{margin-inline-start:auto;transition:transform .2s}.g.open>button .ar{transform:rotate(90deg)}
 [dir=rtl] .g>button .ar{transform:scaleX(-1)}[dir=rtl] .g.open>button .ar{transform:rotate(90deg)}
+.g>button{pointer-events:none;opacity:.55;font-size:12px!important;letter-spacing:.04em;padding:14px 10px 4px!important}.g>button .ar{display:none}.g .sub{background:none!important;padding-inline-start:0!important}.sub button .ic{width:22px;text-align:center}
 .sub{display:none;padding:2px 0 6px 0;padding-inline-start:14px}.g.open .sub{display:block;background:rgba(255,255,255,.04);border-radius:8px}
 .sub button{font-weight:400;opacity:.9}.sub button.on{background:var(--ac);opacity:1;font-weight:600}
 .me{margin-top:auto;padding:12px 10px;background:var(--side2);border-radius:8px;font-size:13px}
 .lg{all:unset;display:block;margin-top:10px;padding:9px 10px;border:1px solid rgba(255,255,255,.3);border-radius:8px;cursor:pointer;text-align:center;font-size:13px}
 .lg:hover{background:var(--side2)}
 main{flex:1;padding:26px;min-width:0}
-main h2{margin:0 0 18px;font-size:22px}
+main h2{margin:0 0 18px;font-size:24px}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:18px;margin-bottom:16px}
 .wrap{overflow-x:auto}
 table{border-collapse:collapse;width:100%;min-width:560px}
-th,td{text-align:start;padding:9px 10px;border-bottom:1px solid var(--bd);font-size:14px;unicode-bidi:plaintext}
+th,td{text-align:start;padding:11px 10px;border-bottom:1px solid var(--bd);font-size:15px;unicode-bidi:plaintext}
 th{color:var(--mu);font-weight:600}
-label{display:block;font-size:13px;color:var(--mu);margin:12px 0 4px}
-input,select,textarea{width:100%;padding:9px 10px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);font:inherit;text-align:start}
+label{display:block;font-size:14px;color:var(--mu);margin:14px 0 5px}
+input,select,textarea{width:100%;padding:11px 12px;font-size:16px;border:1px solid var(--bd);border-radius:7px;background:var(--bg);color:var(--tx);font:inherit;text-align:start}
 input[dir=ltr]{text-align:left}[dir=rtl] input[dir=ltr]{text-align:right}
 input[type=checkbox]{width:auto}
-.btn{background:var(--ac);color:#fff;border:0;border-radius:7px;padding:9px 16px;font:inherit;font-weight:600;cursor:pointer}
-.btn.s{padding:4px 10px;font-size:13px;margin-inline-end:4px}.btn.g2{background:var(--ok)}.btn.o{background:transparent;color:var(--tx);border:1px solid var(--bd)}
+.btn{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:11px 20px;font:inherit;font-weight:600;cursor:pointer}
+.btn.s{padding:6px 12px;font-size:14px;margin-inline-end:4px}.btn.g2{background:var(--ok)}.btn.o{background:transparent;color:var(--tx);border:1px solid var(--bd)}
 .tag{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:600;background:var(--bd)}
 .tag.Accepted,.tag.Done{background:#d3f3e2;color:#0d6b40}.tag.Declined,.tag.Overdue{background:#fcdadd;color:#a3182a}.tag.Sent{background:#dbe4ff;color:#2b4bb0}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0 16px}
@@ -240,10 +241,12 @@ var M=[["g_quotations",[["m_create_q","qform"],["m_all_q","q:All"],["m_new_q","q
 ["g_clients",[["m_add_client","add:clients"],["m_all_clients","list:clients"],["m_import_clients","imp:clients"]]],
 ["g_admin",[["m_create_company","add:companies"],["m_company_details","list:companies"],["m_add_user","uadd"],["m_all_users","ulist"],["m_activity","activity"],["m_settings","settings"]]],
 ["g_requests",[["m_req_add","add:requests"],["m_req_all","req:all"],["m_req_my","req:my"],["m_req_overdue","req:overdue"]]]];
+var ICONS={qform:"➕","q:All":"📄","q:New":"🆕","q:Sent":"📤","add:products":"➕","list:products":"📦","imp:products":"📥","add:clients":"➕","list:clients":"👥","imp:clients":"📥","add:companies":"🏢","list:companies":"🏢",uadd:"👤",ulist:"👥",activity:"🕘",settings:"⚙️","add:requests":"➕","req:all":"📋","req:my":"🙋","req:overdue":"⏰"};
+function ic(k){return ICONS[k]||"•"}
 function menu(){var h='<h1>'+esc(t("app_title"))+'</h1>';
  M.forEach(function(g){var items=g[1].filter(function(i){return allowed(i[1])});if(!items.length)return;
- var o=g[0]===openG;h+='<div class="g'+(o?" open":"")+'"><button data-g="'+g[0]+'"><span>'+esc(t(g[0]))+'</span><span class="ar">›</span></button><div class="sub">';
- items.forEach(function(s){h+='<button data-v="'+s[1]+'" class="'+(view===s[1]?"on":"")+'">'+esc(t(s[0]))+'</button>'});h+='</div></div>'});
+ var o=true;h+='<div class="g'+(o?" open":"")+'"><button data-g="'+g[0]+'"><span>'+esc(t(g[0]))+'</span><span class="ar">›</span></button><div class="sub">';
+ items.forEach(function(s){h+='<button data-v="'+s[1]+'" class="'+(view===s[1]?"on":"")+'"><span class="ic">'+ic(s[1])+'</span><span>'+esc(t(s[0]))+'</span></button>'});h+='</div></div>'});
  h+='<div class="me">'+esc(ME?ME.name:"")+(ME?' · <span class="mu">'+esc(tv(ME.role))+'</span>':"")+'<button class="lg" id="lg">'+esc(t("lang_btn"))+'</button>'+(REMOTE?'<button class="lg" id="lo">'+esc(t("logout"))+'</button>':"")+'</div>';$("side").innerHTML=h}
 $("side").onclick=function(e){var b=e.target.closest("button");if(!b)return;
  if(b.id==="lg"){setLang(lang==="ar"?"en":"ar");return}
@@ -345,7 +348,7 @@ function go(x){if(!allowed(x))x="q:All";var tb=cur(),p=x.split(":")[0],id=x.spli
   else{tb=tabNew(x);if(p==="qedit")tb.draft=newDraft(find(S.quotations,id));if(p==="tpl")tb.draft=tplDraft(id)}}
  else if(tb.draft&&x!==tb.view)tabNew(x);
  else tb.view=x;
- menu();render();window.scrollTo(0,0)}
+ view=cur().view;menu();render();window.scrollTo(0,0)}
 
 /* ================= quotation templates (black & white, A4) ================= */
 var TERMS_AR="هذا العرض ساري حتى التاريخ المذكور أعلاه.\nالأسعار قابلة للتغيير بعد انتهاء مدة العرض.\nشروط الدفع والتسليم حسب الاتفاق.",
