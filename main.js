@@ -614,6 +614,8 @@ ipcMain.handle("pdf:save", async (e, o) => {
   const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true, javascript: false } });
   try {
     await w.loadFile(tmp);
+    // web fonts (when online) need a moment to arrive before the page is printed
+    if (/fonts\.googleapis\.com/.test(String(o.html))) await new Promise((r) => setTimeout(r, 1800));
     // Page size and margins come from the document's own @page rule (A4, template margin).
     const pdf = await w.webContents.printToPDF({ printBackground: true, preferCSSPageSize: true });
     fs.mkdirSync(path.dirname(target), { recursive: true });
