@@ -389,9 +389,9 @@ function qdoc(q,dl,tp){tp=tp||tplById(S.settings.defaultTpl);var d=tp.d,D=DOC[dl
  title=(rtl?d.title_ar:d.title_en)||D.title,terms=(rtl?d.terms_ar:d.terms_en)||"";
  function sp(x){return'<span dir="auto">'+esc(x)+'</span>'}
  function ln(l,x){return x?'<div>'+(l?'<b>'+esc(l)+':</b> ':"")+sp(x)+'</div>':""}
- var sub=(rtl?d.sub_ar:d.sub_en)||"",intro=(rtl?d.intro_ar:d.intro_en)||"",
+ var subl=(rtl?d.sub_ar:d.sub_en)||"",intro=(rtl?d.intro_ar:d.intro_en)||"",
  logo=d.logo&&/^data:image\//.test(d.logo)?'<div class="lgw"><img class="lgi" alt="" src="'+esc(d.logo)+'"></div>':"",
- det='<div class="cn" dir="auto">'+esc(pn)+'</div>'+(sub?'<div class="sb" dir="auto">'+esc(sub)+'</div>':"")+(d.taxno?ln(D.taxno,pt):"")+ln("",co.address)+ln(D.tel,co.phone)+ln(D.email,co.email),
+ det='<div class="cn" dir="auto">'+esc(pn)+'</div>'+(subl?'<div class="sb" dir="auto">'+esc(subl)+'</div>':"")+(d.taxno?ln(D.taxno,pt):"")+ln("",co.address)+ln(D.tel,co.phone)+ln(D.email,co.email),
  beside=logo&&d.logoLay==="beside"&&d.logoPos!=="center",
  coB=beside?'<div class="cr'+(d.logoPos==="end"?" rv":"")+'">'+logo+'<div class="ci">'+det+'</div></div>':logo+det;
  var meta=[[D.no,q.no],[D.date,fmtD(q.date)]];if(d.valid&&q.valid)meta.push([D.valid,fmtD(q.valid)]);
