@@ -9,7 +9,7 @@ padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bott
 *,*:before,*:after{box-sizing:inherit}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 /* Arabic-capable font stack first so Arabic text is shaped and spaced correctly */
-body{margin:0;font:16px/1.6 "Segoe UI",Tahoma,"Noto Naskh Arabic","Noto Sans Arabic",system-ui,-apple-system,Roboto,Arial,sans-serif;background:var(--bg);color:var(--tx);display:flex;min-height:100vh}
+body{margin:0;font:16px/1.6 "Segoe UI",Tahoma,"Noto Naskh Arabic","Noto Sans Arabic",system-ui,-apple-system,Roboto,Arial,sans-serif;background:var(--bg);color:var(--tx);display:flex;height:100vh;overflow:hidden}
 aside{width:250px;background:var(--side);color:#fff;padding:20px 12px;flex-shrink:0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
 aside h1{font-size:18px;margin:4px 10px 20px;font-weight:700}
 .g>button,.sub button{all:unset;display:flex;align-items:center;gap:10px;width:100%;padding:11px 10px;border-radius:8px;cursor:pointer;box-sizing:border-box;font-size:15px;text-align:start}
@@ -22,7 +22,10 @@ aside h1{font-size:18px;margin:4px 10px 20px;font-weight:700}
 .me{margin-top:auto;padding:12px 10px;background:var(--side2);border-radius:8px;font-size:13px}
 .lg{all:unset;display:block;margin-top:10px;padding:9px 10px;border:1px solid rgba(255,255,255,.3);border-radius:8px;cursor:pointer;text-align:center;font-size:13px}
 .lg:hover{background:var(--side2)}
-main{flex:1;padding:26px;min-width:0}
+main{flex:1;padding:26px;min-width:0;height:100vh;overflow-y:auto;direction:ltr}
+/* each pane scrolls on its own and keeps its scrollbar on the outer edge (not in the middle) */
+aside{direction:ltr}aside>*,main>*{direction:var(--d,rtl)}
+body.lo{height:auto;overflow:auto}
 main h2{margin:0 0 18px;font-size:24px}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:18px;margin-bottom:16px}
 .wrap{overflow-x:auto}
@@ -49,7 +52,7 @@ input[type=checkbox]{width:auto}
 body.lo aside,body.lo main{display:none}
 #login{display:none;width:100%;padding:24px 16px}
 .lb{max-width:420px;margin:7vh auto 0}
-#tabs{display:flex;gap:3px;align-items:flex-end;overflow-x:auto;margin:-26px -26px 18px;padding:8px 12px 0;background:var(--bd);position:sticky;top:0;z-index:4}
+#tabs{display:flex;gap:3px;align-items:flex-end;overflow-x:auto;margin:-26px -26px 18px;padding:8px 12px 0;background:var(--bd);position:sticky;top:-26px;z-index:4}
 .tb{display:flex;align-items:center;gap:6px;min-width:90px;max-width:220px;padding:7px 8px 7px 12px;padding-inline:12px 8px;border:0;border-radius:8px 8px 0 0;background:transparent;color:var(--tx);cursor:pointer;font:inherit;font-size:13px;white-space:nowrap}
 .tb:hover{background:rgba(127,127,127,.18)}.tb.on{background:var(--bg);font-weight:600}.tb .tt{overflow:hidden;text-overflow:ellipsis;flex:1}
 .tb .x{border:0;background:transparent;color:inherit;cursor:pointer;border-radius:50%;width:18px;height:18px;line-height:16px;padding:0;font-size:15px}.tb .x:hover{background:rgba(127,127,127,.35)}
@@ -62,12 +65,12 @@ body.lo aside,body.lo main{display:none}
 .cbo{display:flex;justify-content:space-between;gap:10px;padding:8px 10px;cursor:pointer;font-size:14px}.cbo small{color:var(--mu);white-space:nowrap}.cbo.on,.cbo:hover{background:var(--ac);color:#fff}.cbo.on small,.cbo:hover small{color:#fff}.cbe{padding:10px;color:var(--mu);font-size:14px}
 #toast{position:fixed;bottom:20px;inset-inline-start:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:8px;max-width:90vw;display:none;z-index:20;font-size:14px}
 #mb{display:none}
-@media(max-width:760px){body{display:block}aside{position:fixed;z-index:5;left:0;top:0;transform:translateX(-100%);transition:transform .2s;padding-top:calc(20px + env(safe-area-inset-top,0px))}
+@media(max-width:760px){body{display:block;height:auto;overflow:visible}main{height:auto;overflow:visible;direction:var(--d,rtl)}aside{position:fixed;z-index:5;left:0;top:0;transform:translateX(-100%);transition:transform .2s;padding-top:calc(20px + env(safe-area-inset-top,0px))}
 [dir=rtl] aside{left:auto;right:0;transform:translateX(100%)}aside.show,[dir=rtl] aside.show{transform:none}
-#mb{display:block;margin-bottom:12px}main{padding:16px}#tabs{margin:-16px -16px 14px}.line{grid-template-columns:1fr 1fr}}
+#mb{display:block;margin-bottom:12px}main{padding:16px}#tabs{margin:-16px -16px 14px;top:-16px}.line{grid-template-columns:1fr 1fr}}
 /* phones: cards instead of wide tables, one-column forms, bigger touch targets */
 @media(max-width:760px){
-main{padding:12px}#tabs{margin:-12px -12px 12px}.tb{min-width:70px;max-width:150px}
+main{padding:12px}#tabs{margin:-12px -12px 12px;top:0}.tb{min-width:70px;max-width:150px}
 main h2{font-size:20px;margin-bottom:12px}.card{padding:12px}
 .wrap{overflow:visible}table{min-width:0;display:block}tbody{display:block}
 tr.hdr{display:none}tr{display:block;border:1px solid var(--bd);border-radius:10px;margin-bottom:10px;padding:4px 10px;background:var(--card)}
@@ -275,7 +278,7 @@ $("side").onclick=function(e){var b=e.target.closest("button");if(!b)return;
  if(b.dataset.g){openG=openG===b.dataset.g?"":b.dataset.g;menu()}else if(b.dataset.v){go(b.dataset.v);this.classList.remove("show")}};
 $("mb").onclick=function(){$("side").classList.toggle("show")};
 function setLang(l){lang=l;try{localStorage.setItem("qm-lang",l)}catch(e){}applyLang();if(!ME){showLogin();return}menu();render()}
-function applyLang(){var h=document.documentElement;h.lang=lang;h.dir=lang==="ar"?"rtl":"ltr";document.title=t("app_title")}
+function applyLang(){var h=document.documentElement;h.lang=lang;h.dir=lang==="ar"?"rtl":"ltr";h.style.setProperty("--d",h.dir);document.title=t("app_title")}
 
 
 /* ================= generic forms (add / edit) ================= */
@@ -356,7 +359,7 @@ function tabClose(id){var i=-1;TABS.forEach(function(x,n){if(String(x.id)===Stri
  menu();render()}
 $("tabs").onclick=function(e){var c=e.target.closest("[data-close]");if(c){tabClose(c.dataset.close);return}
  if(e.target.closest("#tnew")){go("qform");return}
- var x=e.target.closest("[data-tab]");if(x&&String(AT)!==x.dataset.tab){var f=TABS.filter(function(y){return String(y.id)===x.dataset.tab})[0];if(f){AT=f.id;menu();render();window.scrollTo(0,0)}}};
+ var x=e.target.closest("[data-tab]");if(x&&String(AT)!==x.dataset.tab){var f=TABS.filter(function(y){return String(y.id)===x.dataset.tab})[0];if(f){AT=f.id;menu();render();(function(m){if(m)m.scrollTop=0;window.scrollTo(0,0)})(document.querySelector("main"))}}};
 $("tabs").onauxclick=function(e){if(e.button!==1)return;var x=e.target.closest("[data-tab]");if(x){e.preventDefault();tabClose(x.dataset.tab)}};
 function tabsKey(){return"qm-tabs-"+(ME?ME.username:"x")}
 function tabsSave(){try{localStorage.setItem(tabsKey(),JSON.stringify({tabs:TABS,at:AT}))}catch(e){}}
@@ -376,7 +379,7 @@ function go(x){if(!allowed(x))x="q:All";var tb=cur(),p=x.split(":")[0],id=x.spli
   else{tb=tabNew(x);if(p==="qedit")tb.draft=newDraft(find(S.quotations,id));if(p==="tpl")tb.draft=tplDraft(id)}}
  else if(tb.draft&&x!==tb.view)tabNew(x);
  else tb.view=x;
- view=cur().view;menu();render();window.scrollTo(0,0)}
+ view=cur().view;menu();render();(function(m){if(m)m.scrollTop=0;window.scrollTo(0,0)})(document.querySelector("main"))}
 
 /* ================= quotation templates (black & white, A4) ================= */
 var TERMS_AR="هذا العرض ساري حتى التاريخ المذكور أعلاه.\nالأسعار قابلة للتغيير بعد انتهاء مدة العرض.\nشروط الدفع والتسليم حسب الاتفاق.",
