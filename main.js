@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, Tray, nativeImage, clipboard, ipcMain, dialog, shell } = require("electron");
+const { app, BrowserWindow, Menu, Tray, nativeImage, clipboard, ipcMain, dialog, shell, Notification } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
@@ -14,7 +14,7 @@ const HIDDEN = process.argv.indexOf("--hidden") >= 0;   // started by Windows at
 if (!app.requestSingleInstanceLock()) app.quit();
 
 const APP_DIR = path.join(__dirname, "app");
-const DEFAULT_CFG = { mode: null, port: 3210, host: "", background: true, remote: false, tailscale: true };
+const DEFAULT_CFG = { mode: null, port: 3210, host: "", background: true, remote: false, tailscale: true, alert: { on: true, n: 2, remote: true, native: true } };
 let cfg = Object.assign({}, DEFAULT_CFG);
 let win = null;
 let tray = null;
@@ -184,6 +184,31 @@ function lockWait(key) {
   const a = attempts.get(key);
   return a && a.until > Date.now() ? Math.ceil((a.until - Date.now()) / 1000) : 0;
 }
+const ipFails = new Map();   // ip -> { n, t } wrong passwords from one address across any usernames (15 min window)
+const alertCfg = () => Object.assign({}, DEFAULT_CFG.alert, cfg.alert || {});
+function secAlert(kind, username, ip, ua, count, extra) {
+  const a = alertCfg();
+  if (!a.on) return;
+  logAct("alert", username, ip, ua, kind + "|" + count + "|" + (extra || ""));
+  if (a.native && Notification) {
+    try {
+      const body = kind === "remote"
+        ? "تسجيل دخول من خارج الشبكة / Sign-in from outside the network: " + username + " - " + ip
+        : count + " كلمات مرور خاطئة / wrong passwords: " + (username || "?") + " - " + ip;
+      new Notification({ title: "تنبيه أمان / Security alert", body }).show();
+    } catch (e) {}
+  }
+}
+function failedAlert(key, username, ip, ua, exists, kind) {
+  const a = alertCfg(), un = (attempts.get(key) || {}).n || 0, now = Date.now();
+  let f = ipFails.get(ip);
+  if (!f || now - f.t > 900000) f = { n: 0, t: now };
+  f.n++; f.t = now; ipFails.set(ip, f);
+  if (ipFails.size > 5000) ipFails.clear();
+  if (!a.on) return;
+  const thr = Math.max(1, +a.n || 2);
+  if (un === thr || un === 5 || f.n % thr === 0) secAlert(kind || "fail", username, ip, ua, Math.max(un, f.n), exists ? "1" : "0");
+}
 function failed(key) {
   const a = attempts.get(key) || { n: 0, until: 0 };
   a.n++;
@@ -304,10 +329,11 @@ async function handleApi(req, res, p) {
     const u = users.find((x) => x.username === username);
     // hash even for unknown users so response time does not reveal which usernames exist
     const ok = u ? await checkPw(u, b.password || "") : (await hashPw(b.password || "", "0".repeat(32)), false);
-    if (!ok) { failed(key); logAct("login_failed", username, ip, ua); return sendJson(res, 401, { error: "bad_login" }); }
+    if (!ok) { failed(key); logAct("login_failed", username, ip, ua); failedAlert(key, username, ip, ua, !!u); return sendJson(res, 401, { error: "bad_login" }); }
     if (u.disabled) { logAct("login_failed", username, ip, ua, "disabled"); return sendJson(res, 403, { error: "disabled" }); }
     attempts.delete(key);
     logAct("login", u.username, ip, ua);
+    if (alertCfg().remote && !isPrivateIp(ip) && !isTailscaleIp(ip)) secAlert("remote", u.username, ip, ua, 0, "");
     return sendJson(res, 200, { token: newSession(u, !!b.remember, req), user: pub(u) });
   }
 
@@ -323,7 +349,7 @@ async function handleApi(req, res, p) {
     if (wait) { logAct("locked", username, ip, ua); return sendJson(res, 429, { error: "locked", wait }); }
     const u = users.find((x) => x.username === username);
     const ok = u ? await checkPw(u, b.password || "") : (await hashPw(b.password || "", "0".repeat(32)), false);
-    if (!ok || u.disabled) { failed(key); logAct("sign_failed", username, ip, ua, "by " + me.username); return sendJson(res, 403, { error: "bad_login" }); }
+    if (!ok || u.disabled) { failed(key); logAct("sign_failed", username, ip, ua, "by " + me.username); failedAlert(key, username, ip, ua, !!u, "sigfail"); return sendJson(res, 403, { error: "bad_login" }); }
     attempts.delete(key);
     if (!(u.sig && (u.sig.ar || u.sig.en))) return sendJson(res, 409, { error: "no_sig" });
     logAct("sign", u.username, ip, ua, "by " + me.username);
@@ -361,8 +387,21 @@ async function handleApi(req, res, p) {
     return sendJson(res, 200, { sigs: out });
   }
 
-  const adminOnly = p.indexOf("/api/users") === 0 || p === "/api/activity" || p.indexOf("/api/sessions") === 0;
+  const adminOnly = p.indexOf("/api/users") === 0 || p.indexOf("/api/alert") === 0 || p === "/api/activity" || p.indexOf("/api/sessions") === 0;
   if (adminOnly && me.role !== "Admin" && !(m === "PUT" && new RegExp("^/api/users/" + me.id + "$").test(p))) return sendJson(res, 403, { error: "forbidden" });
+
+  if (p === "/api/alert-settings" && m === "GET") return sendJson(res, 200, { alert: alertCfg() });
+  if (p === "/api/alert-settings" && m === "PUT") {
+    const b = await readBody(req, 1e4), o = b && b.alert || {}, n = Math.round(Number(o.n));
+    if (!(n >= 1 && n <= 10)) return sendJson(res, 400, { error: "bad_value" });
+    cfg.alert = { on: !!o.on, n, remote: !!o.remote, native: !!o.native };
+    saveCfg(cfg);
+    return sendJson(res, 200, { alert: alertCfg() });
+  }
+  if (p === "/api/alerts" && m === "GET") {
+    const since = Number(new URL(req.url, "http://x").searchParams.get("since")) || 0;
+    return sendJson(res, 200, { items: activity.filter((e) => e.ev === "alert" && e.ts > since).slice(-10) });
+  }
 
   if (p === "/api/activity" && m === "GET") return sendJson(res, 200, { items: activity.slice(-1000).reverse() });
 
