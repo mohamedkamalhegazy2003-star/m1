@@ -14,7 +14,7 @@ const HIDDEN = process.argv.indexOf("--hidden") >= 0;   // started by Windows at
 if (!app.requestSingleInstanceLock()) app.quit();
 
 const APP_DIR = path.join(__dirname, "app");
-const DEFAULT_CFG = { mode: null, port: 3210, host: "", background: true };
+const DEFAULT_CFG = { mode: null, port: 3210, host: "", background: true, remote: false };
 let cfg = Object.assign({}, DEFAULT_CFG);
 let win = null;
 let tray = null;
@@ -103,6 +103,13 @@ function ipOf(req) {
   let a = (req && req.socket && req.socket.remoteAddress) || "";
   a = a.replace(/^::ffff:/, "");
   return a === "::1" ? "127.0.0.1" : a;
+}
+function isPrivateIp(a) {
+  if (!a) return false;
+  if (a.indexOf(":") >= 0) { a = a.toLowerCase(); return a === "::1" || /^f[cd]/.test(a) || /^fe[89ab]/.test(a); }
+  const p = a.split(".").map(Number);
+  if (p.length !== 4 || p.some((x) => !(x >= 0 && x <= 255))) return false;
+  return p[0] === 10 || p[0] === 127 || (p[0] === 192 && p[1] === 168) || (p[0] === 172 && p[1] >= 16 && p[1] <= 31) || (p[0] === 169 && p[1] === 254);
 }
 function uaShort(req) {
   const ua = String((req && req.headers && req.headers["user-agent"]) || "");
@@ -423,6 +430,7 @@ function handleRequest(req, res) {
   catch (e) { try { if (!res.headersSent) res.writeHead(400); res.end(); } catch (e2) {} }
 }
 function handleRequest2(req, res) {
+  if (!cfg.remote && !isPrivateIp(ipOf(req))) { res.writeHead(403, { "Content-Type": "text/plain" }); return res.end("Remote access is disabled"); }
   let u;
   try { u = new URL(req.url, "http://localhost"); } catch (e) { res.writeHead(400); return res.end(); }
 
@@ -564,7 +572,7 @@ async function boot() {
 const fromLocalFile = (e) => !!(e.senderFrame && String(e.senderFrame.url).indexOf("file:") === 0);
 
 ipcMain.handle("info:get", () => ({
-  mode: cfg.mode, port: cfg.port, host: cfg.host, background: !!cfg.background, packaged: app.isPackaged,
+  mode: cfg.mode, port: cfg.port, host: cfg.host, background: !!cfg.background, remote: !!cfg.remote, packaged: app.isPackaged,
   ips: lanAddresses(), dataFile: dataFile(), version: app.getVersion()
 }));
 
@@ -588,6 +596,25 @@ ipcMain.handle("bg:set", (e, on) => {
   syncTray();
   return cfg.background;
 });
+
+ipcMain.handle("remote:set", (e, on) => {
+  if (!fromLocalFile(e)) return !!cfg.remote;
+  cfg.remote = !!on;
+  saveCfg(cfg);
+  if (!cfg.remote) { sessions.forEach((s, t) => { if (!isPrivateIp(s.ip)) sessions.delete(t); }); }
+  return cfg.remote;
+});
+
+ipcMain.handle("ip:public", () => new Promise((resolve) => {
+  try {
+    const r = require("https").get("https://api.ipify.org", { timeout: 6000 }, (res) => {
+      let d = ""; res.on("data", (c) => { d += c; if (d.length > 100) res.destroy(); });
+      res.on("end", () => resolve(/^[0-9a-fA-F.:]{3,45}$/.test(d.trim()) ? d.trim() : ""));
+    });
+    r.on("timeout", () => { r.destroy(); resolve(""); });
+    r.on("error", () => resolve(""));
+  } catch (e) { resolve(""); }
+}));
 
 ipcMain.handle("cfg:setup", () => { showSetup(); return true; });
 
