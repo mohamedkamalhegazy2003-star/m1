@@ -14,7 +14,7 @@ const HIDDEN = process.argv.indexOf("--hidden") >= 0;   // started by Windows at
 if (!app.requestSingleInstanceLock()) app.quit();
 
 const APP_DIR = path.join(__dirname, "app");
-const DEFAULT_CFG = { mode: null, port: 3210, host: "", background: true, remote: false };
+const DEFAULT_CFG = { mode: null, port: 3210, host: "", background: true, remote: false, tailscale: true };
 let cfg = Object.assign({}, DEFAULT_CFG);
 let win = null;
 let tray = null;
@@ -110,6 +110,18 @@ function isPrivateIp(a) {
   const p = a.split(".").map(Number);
   if (p.length !== 4 || p.some((x) => !(x >= 0 && x <= 255))) return false;
   return p[0] === 10 || p[0] === 127 || (p[0] === 192 && p[1] === 168) || (p[0] === 172 && p[1] >= 16 && p[1] <= 31) || (p[0] === 169 && p[1] === 254);
+}
+function isTailscaleIp(a) {
+  if (!a) return false;
+  if (a.indexOf(":") >= 0) return a.toLowerCase().indexOf("fd7a:115c:a1e0:") === 0;
+  const p = a.split(".").map(Number);
+  return p.length === 4 && p[0] === 100 && p[1] >= 64 && p[1] <= 127;
+}
+function tailscaleAddresses() {
+  const out = [];
+  const nets = os.networkInterfaces();
+  Object.keys(nets).forEach((n) => (nets[n] || []).forEach((a) => { if (a.family === "IPv4" && isTailscaleIp(a.address)) out.push(a.address); }));
+  return out;
 }
 function uaShort(req) {
   const ua = String((req && req.headers && req.headers["user-agent"]) || "");
@@ -430,7 +442,7 @@ function handleRequest(req, res) {
   catch (e) { try { if (!res.headersSent) res.writeHead(400); res.end(); } catch (e2) {} }
 }
 function handleRequest2(req, res) {
-  if (!cfg.remote && !isPrivateIp(ipOf(req))) { res.writeHead(403, { "Content-Type": "text/plain" }); return res.end("Remote access is disabled"); }
+  if (!cfg.remote && !isPrivateIp(ipOf(req)) && !(cfg.tailscale !== false && isTailscaleIp(ipOf(req)))) { res.writeHead(403, { "Content-Type": "text/plain" }); return res.end("Remote access is disabled"); }
   let u;
   try { u = new URL(req.url, "http://localhost"); } catch (e) { res.writeHead(400); return res.end(); }
 
@@ -572,7 +584,7 @@ async function boot() {
 const fromLocalFile = (e) => !!(e.senderFrame && String(e.senderFrame.url).indexOf("file:") === 0);
 
 ipcMain.handle("info:get", () => ({
-  mode: cfg.mode, port: cfg.port, host: cfg.host, background: !!cfg.background, remote: !!cfg.remote, packaged: app.isPackaged,
+  mode: cfg.mode, port: cfg.port, host: cfg.host, background: !!cfg.background, remote: !!cfg.remote, tailscale: cfg.tailscale !== false, tsIps: tailscaleAddresses(), packaged: app.isPackaged,
   ips: lanAddresses(), dataFile: dataFile(), version: app.getVersion()
 }));
 
@@ -601,8 +613,16 @@ ipcMain.handle("remote:set", (e, on) => {
   if (!fromLocalFile(e)) return !!cfg.remote;
   cfg.remote = !!on;
   saveCfg(cfg);
-  if (!cfg.remote) { sessions.forEach((s, t) => { if (!isPrivateIp(s.ip)) sessions.delete(t); }); }
+  if (!cfg.remote) { sessions.forEach((s, t) => { if (!isPrivateIp(s.ip) && !(cfg.tailscale !== false && isTailscaleIp(s.ip))) sessions.delete(t); }); }
   return cfg.remote;
+});
+
+ipcMain.handle("ts:set", (e, on) => {
+  if (!fromLocalFile(e)) return cfg.tailscale !== false;
+  cfg.tailscale = !!on;
+  saveCfg(cfg);
+  if (!cfg.tailscale && !cfg.remote) sessions.forEach((s, t) => { if (isTailscaleIp(s.ip)) sessions.delete(t); });
+  return cfg.tailscale;
 });
 
 ipcMain.handle("ip:public", () => new Promise((resolve) => {
