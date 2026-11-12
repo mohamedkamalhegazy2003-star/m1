@@ -521,7 +521,7 @@ function handleRequest2(req, res) {
   if (req.method !== "GET") { res.writeHead(405); return res.end(); }
   if (u.pathname === "/vendor/xlsx.js") return serveXlsx(res);
 
-  const rel = u.pathname === "/" ? "index.html" : decodeURIComponent(u.pathname).replace(/^\/+/, "");
+  const rel = u.pathname === "/" ? "index.html" : u.pathname === "/favicon.ico" ? "favicon-32.png" : decodeURIComponent(u.pathname).replace(/^\/+/, "");
   if (rel.indexOf("\0") >= 0) { res.writeHead(400); return res.end(); }
   const file = path.normalize(path.join(APP_DIR, rel));
   if (file.indexOf(APP_DIR + path.sep) !== 0 || file === path.join(APP_DIR, "setup.html")) { res.writeHead(403); return res.end(); }
