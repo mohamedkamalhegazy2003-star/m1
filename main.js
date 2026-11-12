@@ -316,6 +316,20 @@ async function handleApi(req, res, p) {
   if (!me) return sendJson(res, 401, { error: "auth" });
   const myPerms = effPerms(me);
 
+  /* the owner of a signature must confirm with their own username and password before it is placed on a quotation */
+  if (p === "/api/sig/verify" && m === "POST") {
+    const b = await readBody(req, 1e5), username = cleanUsername(b.username), key = ip + "|" + username;
+    const wait = lockWait(key);
+    if (wait) { logAct("locked", username, ip, ua); return sendJson(res, 429, { error: "locked", wait }); }
+    const u = users.find((x) => x.username === username);
+    const ok = u ? await checkPw(u, b.password || "") : (await hashPw(b.password || "", "0".repeat(32)), false);
+    if (!ok || u.disabled) { failed(key); logAct("sign_failed", username, ip, ua, "by " + me.username); return sendJson(res, 403, { error: "bad_login" }); }
+    attempts.delete(key);
+    if (!(u.sig && (u.sig.ar || u.sig.en))) return sendJson(res, 409, { error: "no_sig" });
+    logAct("sign", u.username, ip, ua, "by " + me.username);
+    return sendJson(res, 200, { uid: u.id, name: u.name });
+  }
+
   if (p === "/api/auth/me" && m === "GET") return sendJson(res, 200, { user: pub(me) });
   if (p === "/api/auth/logout" && m === "POST") {
     sessions.delete(tokenOf(req)); logAct("logout", me.username, ip, ua);
