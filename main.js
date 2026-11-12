@@ -150,7 +150,7 @@ function effPerms(u) {
   if (Array.isArray(u.perms)) return u.perms.filter((p) => PERMS.indexOf(p) >= 0);
   return (PRESET[u.role] || []).slice();
 }
-const pub = (u) => ({ id: u.id, username: u.username, name: u.name, email: u.email || "", phone: u.phone || "", role: u.role, perms: effPerms(u), disabled: !!u.disabled });
+const pub = (u) => ({ id: u.id, username: u.username, name: u.name, email: u.email || "", phone: u.phone || "", role: u.role, perms: effPerms(u), disabled: !!u.disabled, sig: !!(u.sig && (u.sig.ar || u.sig.en)) });
 const activeAdmins = () => users.filter((u) => u.role === "Admin" && !u.disabled).length;
 const cleanUsername = (s) => String(s || "").trim().toLowerCase();
 const validUsername = (s) => /^\S{2,40}$/.test(s);
@@ -341,6 +341,12 @@ async function handleApi(req, res, p) {
   /* ----- admin: user management, login activity, active sessions ----- */
   if (p === "/api/users" && m === "GET") return sendJson(res, 200, { users: users.map(pub) });
 
+  if (p === "/api/sigs" && m === "GET") {
+    const out = {};
+    users.forEach((u) => { if (u.sig && (u.sig.ar || u.sig.en)) out[u.id] = { ar: u.sig.ar || "", en: u.sig.en || "" }; });
+    return sendJson(res, 200, { sigs: out });
+  }
+
   const adminOnly = p.indexOf("/api/users") === 0 || p === "/api/activity" || p.indexOf("/api/sessions") === 0;
   if (adminOnly && me.role !== "Admin" && !(m === "PUT" && new RegExp("^/api/users/" + me.id + "$").test(p))) return sendJson(res, 403, { error: "forbidden" });
 
@@ -391,7 +397,13 @@ async function handleApi(req, res, p) {
       return sendJson(res, 200, { ok: true });
     }
 
-    const b = await readBody(req, 1e5);
+    const b = await readBody(req, 6e5);
+    if (b.sig !== undefined) {
+      const ok = (v) => v === "" || (typeof v === "string" && v.length <= 200000 && /^data:image\/png;base64,[A-Za-z0-9+\/=]+$/.test(v));
+      const sg = b.sig && typeof b.sig === "object" ? b.sig : {};
+      if ((sg.ar !== undefined && !ok(sg.ar)) || (sg.en !== undefined && !ok(sg.en))) return sendJson(res, 400, { error: "bad_sig" });
+      t.sig = { ar: sg.ar !== undefined ? sg.ar : (t.sig && t.sig.ar) || "", en: sg.en !== undefined ? sg.en : (t.sig && t.sig.en) || "" };
+    }
     if (isAdmin) {
       if (b.role !== undefined && ROLES.indexOf(b.role) < 0) return sendJson(res, 400, { error: "bad_role" });
       const losesAdmin = (b.role !== undefined && b.role !== "Admin") || b.disabled === true;
