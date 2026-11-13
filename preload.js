@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld("api", {
   savePdf: (o) => ipcRenderer.invoke("pdf:save", o),
   openWhatsApp: (o) => ipcRenderer.invoke("wa:open", o),
   openMail: (o) => ipcRenderer.invoke("mail:open", o),
+  pickBackupDir: () => ipcRenderer.invoke("backup:dir"),
+  openBackupDir: () => ipcRenderer.invoke("backup:open"),
   setTailscale: (on) => ipcRenderer.invoke("ts:set", on),
   setRemote: (on) => ipcRenderer.invoke("remote:set", on),
   publicIp: () => ipcRenderer.invoke("ip:public"),

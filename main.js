@@ -14,7 +14,7 @@ const HIDDEN = process.argv.indexOf("--hidden") >= 0;   // started by Windows at
 if (!app.requestSingleInstanceLock()) app.quit();
 
 const APP_DIR = path.join(__dirname, "app");
-const DEFAULT_CFG = { mode: null, port: 3210, host: "", background: true, remote: false, tailscale: true, alert: { on: true, n: 2, remote: true, native: true } };
+const DEFAULT_CFG = { mode: null, port: 3210, host: "", background: true, remote: false, tailscale: true, backup: { auto: true, hours: 24, keep: 14 }, backupDir: "", alert: { on: true, n: 2, remote: true, native: true } };
 let cfg = Object.assign({}, DEFAULT_CFG);
 let win = null;
 let tray = null;
@@ -93,6 +93,54 @@ function loadUsers() {
   catch (e) { users = []; }
 }
 const persistUsers = () => writeJson(usersFile(), users);
+
+/* ---------- backups: manual download, automatic copies in a folder, restore ---------- */
+const backupCfg = () => Object.assign({}, DEFAULT_CFG.backup, cfg.backup || {});
+const backupDir = () => (cfg.backupDir && String(cfg.backupDir).trim()) || path.join(app.getPath("userData"), "backups");
+const BK_NAME = /^qm-backup-[A-Za-z0-9_-]+\.json(\.gz)?$/;
+let lastBackedRev = -1;
+function backupObject(withUsers) {
+  return { app: "qm-backup", v: 1, created: new Date().toISOString(), rev: state.rev, data: state.data, users: withUsers ? users : undefined };
+}
+function listBackups() {
+  try {
+    return fs.readdirSync(backupDir()).filter((n) => BK_NAME.test(n)).map((n) => {
+      const st = fs.statSync(path.join(backupDir(), n));
+      return { name: n, size: st.size, ts: st.mtimeMs };
+    }).sort((a, b) => b.ts - a.ts);
+  } catch (e) { return []; }
+}
+function makeBackup(tag) {
+  if (state.data === null) return null;
+  fs.mkdirSync(backupDir(), { recursive: true });
+  const d = new Date(), z = (n) => String(n).padStart(2, "0");
+  const name = "qm-backup-" + d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + "-" + z(d.getHours()) + z(d.getMinutes()) + z(d.getSeconds()) + (tag ? "-" + tag : "") + ".json.gz";
+  const file = path.join(backupDir(), name);
+  fs.writeFileSync(file + ".tmp", zlib.gzipSync(JSON.stringify(backupObject(true))));
+  fs.renameSync(file + ".tmp", file);
+  lastBackedRev = state.rev;
+  const keep = Math.max(1, +backupCfg().keep || 14);
+  const autos = listBackups().filter((x) => !/-(manual|pre-restore)\.json/.test(x.name));
+  autos.slice(keep).forEach((x) => { try { fs.unlinkSync(path.join(backupDir(), x.name)); } catch (e) {} });
+  return name;
+}
+function readBackupFile(name) {
+  if (!BK_NAME.test(name)) throw new Error("bad name");
+  let buf = fs.readFileSync(path.join(backupDir(), name));
+  if (/\.gz$/.test(name)) buf = zlib.gunzipSync(buf);
+  return JSON.parse(buf.toString("utf8"));
+}
+function backupTick() {
+  try {
+    const c = backupCfg();
+    if (!c.auto || state.data === null || state.rev === lastBackedRev) return;
+    const l = listBackups()[0];
+    if (!l || Date.now() - l.ts >= Math.max(1, +c.hours || 24) * 3600e3) makeBackup("");
+    else lastBackedRev = state.rev;
+  } catch (e) { console.error("backup failed", e && e.message); }
+}
+setTimeout(backupTick, 30000);
+setInterval(backupTick, 600000);
 function loadActivity() {
   try { activity = JSON.parse(fs.readFileSync(actFile(), "utf8")); if (!Array.isArray(activity)) activity = []; }
   catch (e) { activity = []; }
@@ -287,7 +335,7 @@ function readBody(req, limit) {
 const MIME = {
   ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8", ".json": "application/json; charset=utf-8",
-  ".png": "image/png", ".svg": "image/svg+xml", ".ico": "image/x-icon"
+  ".png": "image/png", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".ttf": "font/ttf"
 };
 
 function sendRaw(res, code, body, headers) {
@@ -383,13 +431,49 @@ async function handleApi(req, res, p) {
 
   if (p === "/api/sigs" && m === "GET") {
     const out = {};
-    users.forEach((u) => { if (u.sig && (u.sig.ar || u.sig.en)) out[u.id] = { ar: u.sig.ar || "", en: u.sig.en || "" }; });
+    users.forEach((u) => { if (u.sig && (u.sig.ar || u.sig.en)) out[u.id] = { ar: u.sig.ar || "", en: u.sig.en || "", name: u.name || "" }; });
     return sendJson(res, 200, { sigs: out });
   }
 
-  const adminOnly = p.indexOf("/api/users") === 0 || p.indexOf("/api/alert") === 0 || p === "/api/activity" || p.indexOf("/api/sessions") === 0;
+  const adminOnly = p.indexOf("/api/users") === 0 || p.indexOf("/api/alert") === 0 || p.indexOf("/api/backup") === 0 || p === "/api/activity" || p.indexOf("/api/sessions") === 0;
   if (adminOnly && me.role !== "Admin" && !(m === "PUT" && new RegExp("^/api/users/" + me.id + "$").test(p))) return sendJson(res, 403, { error: "forbidden" });
 
+  if (p === "/api/backup/settings" && m === "GET") return sendJson(res, 200, { backup: backupCfg(), dir: backupDir(), list: listBackups() });
+  if (p === "/api/backup/settings" && m === "PUT") {
+    const b = await readBody(req, 1e4), o = b && b.backup || {}, h = Math.round(Number(o.hours)), k = Math.round(Number(o.keep));
+    if (!(h >= 1 && h <= 720) || !(k >= 1 && k <= 100)) return sendJson(res, 400, { error: "bad_value" });
+    cfg.backup = { auto: !!o.auto, hours: h, keep: k };
+    saveCfg(cfg);
+    return sendJson(res, 200, { backup: backupCfg() });
+  }
+  if (p === "/api/backup/run" && m === "POST") {
+    try { const n = makeBackup("manual"); return sendJson(res, n ? 200 : 400, n ? { name: n, list: listBackups() } : { error: "no_data" }); }
+    catch (e) { return sendJson(res, 500, { error: "write failed" }); }
+  }
+  if (p === "/api/backup/export" && m === "GET") {
+    const nm = new URL(req.url, "http://x").searchParams.get("name");
+    try { return sendJson(res, 200, nm ? readBackupFile(nm) : backupObject(true)); } catch (e) { return sendJson(res, 404, { error: "not_found" }); }
+  }
+  if (p === "/api/backup/delete" && m === "POST") {
+    const b = await readBody(req, 1e4);
+    try { if (!BK_NAME.test(b.name)) throw 0; fs.unlinkSync(path.join(backupDir(), b.name)); } catch (e) { return sendJson(res, 404, { error: "not_found" }); }
+    return sendJson(res, 200, { list: listBackups() });
+  }
+  if (p === "/api/backup/restore" && m === "POST") {
+    const b = await readBody(req, 60 * 1024 * 1024);
+    let obj;
+    try { obj = b.name ? readBackupFile(b.name) : b.backup; } catch (e) { return sendJson(res, 404, { error: "not_found" }); }
+    if (!obj || obj.app !== "qm-backup" || !obj.data || typeof obj.data !== "object" || Array.isArray(obj.data)) return sendJson(res, 400, { error: "bad_backup" });
+    const withUsers = !!b.users && Array.isArray(obj.users);
+    if (withUsers && !obj.users.some((u) => u && u.role === "Admin" && !u.disabled && u.hash)) return sendJson(res, 400, { error: "no_admin" });
+    try { makeBackup("pre-restore"); } catch (e) {}
+    delete obj.data.users;
+    state = { rev: state.rev + 1, data: obj.data };
+    if (withUsers) { users = obj.users; persistUsers(); const keepTok = tokenOf(req); sessions.forEach((s, t) => { if (t !== keepTok && !users.some((u) => u.id === s.uid)) sessions.delete(t); }); }
+    try { persistState(); flushState(); } catch (e) { return sendJson(res, 500, { error: "write failed" }); }
+    logAct("restore", me.username, ip, ua, withUsers ? "users" : "");
+    return sendJson(res, 200, { rev: state.rev });
+  }
   if (p === "/api/alert-settings" && m === "GET") return sendJson(res, 200, { alert: alertCfg() });
   if (p === "/api/alert-settings" && m === "PUT") {
     const b = await readBody(req, 1e4), o = b && b.alert || {}, n = Math.round(Number(o.n));
@@ -681,6 +765,15 @@ ipcMain.handle("remote:set", (e, on) => {
   if (!cfg.remote) { sessions.forEach((s, t) => { if (!isPrivateIp(s.ip) && !(cfg.tailscale !== false && isTailscaleIp(s.ip))) sessions.delete(t); }); }
   return cfg.remote;
 });
+
+ipcMain.handle("backup:dir", async (e) => {
+  if (!fromLocalFile(e)) return backupDir();
+  const r = await dialog.showOpenDialog({ properties: ["openDirectory", "createDirectory"] });
+  if (r.canceled || !r.filePaths[0]) return backupDir();
+  cfg.backupDir = r.filePaths[0]; saveCfg(cfg);
+  return backupDir();
+});
+ipcMain.handle("backup:open", (e) => { if (fromLocalFile(e)) { try { fs.mkdirSync(backupDir(), { recursive: true }); shell.openPath(backupDir()); } catch (x) {} } });
 
 ipcMain.handle("ts:set", (e, on) => {
   if (!fromLocalFile(e)) return cfg.tailscale !== false;
