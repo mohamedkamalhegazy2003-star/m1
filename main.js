@@ -73,7 +73,8 @@ function stateJson() {
 const scrypt = util.promisify(crypto.scrypt);
 const usersFile = () => path.join(app.getPath("userData"), "users.json");
 const actFile = () => path.join(app.getPath("userData"), "activity.json");
-const PERMS = ["q_add", "q_edit", "q_del", "clients", "products", "requests", "company", "tpl"];
+const PERMS = ["q_add", "q_edit", "q_del", "q_send", "q_approve", "cl_add", "cl_edit", "cl_del", "pr_add", "pr_edit", "pr_del", "rq_add", "rq_edit", "rq_del", "company", "tpl"];
+const LEGACY = { clients: ["cl_add", "cl_edit", "cl_del"], products: ["pr_add", "pr_edit", "pr_del"], requests: ["rq_add", "rq_edit", "rq_del"] };
 const ROLES = ["Admin", "Sales", "Viewer", "Custom"];
 const PRESET = { Admin: PERMS, Sales: PERMS, Viewer: [], Custom: [] };
 let users = [];
@@ -195,7 +196,14 @@ async function checkPw(u, pw) {
 }
 function effPerms(u) {
   if (u.role === "Admin") return PERMS.slice();
-  if (Array.isArray(u.perms)) return u.perms.filter((p) => PERMS.indexOf(p) >= 0);
+  if (Array.isArray(u.perms)) {
+    let a = u.perms.slice();
+    if (u.pv !== 2) {   // accounts saved before detailed permissions: keep what they could do
+      a.slice().forEach((p) => { if (LEGACY[p]) a = a.concat(LEGACY[p]); });
+      if (a.indexOf("q_edit") >= 0) a.push("q_send");
+    }
+    return a.filter((p, i) => PERMS.indexOf(p) >= 0 && a.indexOf(p) === i);
+  }
   return (PRESET[u.role] || []).slice();
 }
 const pub = (u) => ({ id: u.id, username: u.username, name: u.name, email: u.email || "", phone: u.phone || "", role: u.role, perms: effPerms(u), disabled: !!u.disabled, sig: !!(u.sig && (u.sig.ar || u.sig.en)) });
@@ -301,16 +309,32 @@ function settingsChanged(o, n) {
   }
   return false;
 }
+function listNeed(o, n, pf, need) {
+  const om = new Map((o || []).map((x) => [String(x && x.id), x])), nm = new Map((n || []).map((x) => [String(x && x.id), x]));
+  nm.forEach((x, id) => { if (!om.has(id)) need.add(pf + "_add"); else if (!same(om.get(id), x)) need.add(pf + "_edit"); });
+  om.forEach((x, id) => { if (!nm.has(id)) need.add(pf + "_del"); });
+}
+const APPR_KEYS = ["appr", "stamp", "sig"];
+function quoteNeed(a, b, need) {
+  const strip = (q) => { const c = Object.assign({}, q); delete c.status; APPR_KEYS.forEach((k) => delete c[k]); if (c.by && typeof c.by === "object") { c.by = Object.assign({}, c.by); delete c.by.uid; } return c; };
+  if (!same(strip(a), strip(b))) need.add("q_edit");
+  if (a.status !== b.status) need.add("q_send");
+  const uidChanged = (a.sig || b.sig) && !same((a.by || {}).uid, (b.by || {}).uid);
+  if (APPR_KEYS.some((k) => !same(a[k], b[k])) || uidChanged) need.add("q_approve");
+}
 function needPerms(o, n) {
   o = o || {}; n = n || {};
   const need = new Set();
-  if (!same(o.clients, n.clients)) need.add("clients");
-  if (!same(o.products, n.products)) need.add("products");
-  if (!same(o.requests, n.requests)) need.add("requests");
+  listNeed(o.clients, n.clients, "cl", need);
+  listNeed(o.products, n.products, "pr", need);
+  listNeed(o.requests, n.requests, "rq", need);
   if (!same(o.companies, n.companies)) need.add("company");
   if (settingsChanged(o.settings, n.settings)) need.add("tpl");
   const oq = new Map((o.quotations || []).map((q) => [String(q.id), q])), nq = new Map((n.quotations || []).map((q) => [String(q.id), q]));
-  nq.forEach((q, id) => { if (!oq.has(id)) need.add("q_add"); else if (!same(oq.get(id), q)) need.add("q_edit"); });
+  nq.forEach((q, id) => {
+    if (!oq.has(id)) { need.add("q_add"); if (q.sig || q.stamp || q.appr) need.add("q_approve"); }
+    else if (!same(oq.get(id), q)) quoteNeed(oq.get(id), q, need);
+  });
   oq.forEach((q, id) => { if (!nq.has(id)) need.add("q_del"); });
   return Array.from(need);
 }
@@ -399,9 +423,11 @@ async function handleApi(req, res, p) {
     const ok = u ? await checkPw(u, b.password || "") : (await hashPw(b.password || "", "0".repeat(32)), false);
     if (!ok || u.disabled) { failed(key); logAct("sign_failed", username, ip, ua, "by " + me.username); failedAlert(key, username, ip, ua, !!u, "sigfail"); return sendJson(res, 403, { error: "bad_login" }); }
     attempts.delete(key);
-    if (!(u.sig && (u.sig.ar || u.sig.en))) return sendJson(res, 409, { error: "no_sig" });
+    if (effPerms(u).indexOf("q_approve") < 0) return sendJson(res, 403, { error: "no_perm" });
+    const hasSig = !!(u.sig && (u.sig.ar || u.sig.en));
+    if (!hasSig && b.needSig !== false) return sendJson(res, 409, { error: "no_sig" });
     logAct("sign", u.username, ip, ua, "by " + me.username);
-    return sendJson(res, 200, { uid: u.id, name: u.name });
+    return sendJson(res, 200, { uid: u.id, name: u.name, hasSig });
   }
 
   if (p === "/api/auth/me" && m === "GET") return sendJson(res, 200, { user: pub(me) });
@@ -516,7 +542,7 @@ async function handleApi(req, res, p) {
     if (!validPw(b.password)) return sendJson(res, 400, { error: "weak" });
     if (ROLES.indexOf(b.role) < 0) return sendJson(res, 400, { error: "bad_role" });
     const perms = cleanPerms(b.perms) || PRESET[b.role].slice();
-    const u = Object.assign({ id: nextUserId(), username, name: String(b.name || username).trim().slice(0, 100) || username, email: String(b.email || "").trim().slice(0, 200), phone: String(b.phone || "").trim().slice(0, 30), role: b.role, perms, disabled: false }, await makeCred(b.password));
+    const u = Object.assign({ id: nextUserId(), username, name: String(b.name || username).trim().slice(0, 100) || username, email: String(b.email || "").trim().slice(0, 200), phone: String(b.phone || "").trim().slice(0, 30), role: b.role, perms, pv: 2, disabled: false }, await makeCred(b.password));
     users.push(u); persistUsers();
     return sendJson(res, 200, { user: pub(u) });
   }
@@ -557,8 +583,8 @@ async function handleApi(req, res, p) {
     if (b.email !== undefined) t.email = String(b.email).trim().slice(0, 200);
     if (b.phone !== undefined) t.phone = String(b.phone).trim().slice(0, 30);
     if (isAdmin) {
-      if (b.role !== undefined) { t.role = b.role; if (!Array.isArray(b.perms)) t.perms = PRESET[b.role].slice(); }
-      if (Array.isArray(b.perms)) t.perms = cleanPerms(b.perms);
+      if (b.role !== undefined) { t.role = b.role; t.pv = 2; if (!Array.isArray(b.perms)) t.perms = PRESET[b.role].slice(); }
+      if (Array.isArray(b.perms)) { t.perms = cleanPerms(b.perms); t.pv = 2; }
       if (b.disabled !== undefined) { t.disabled = !!b.disabled; if (t.disabled) dropSessions(t.id); }
     }
     if (cred) { Object.assign(t, cred); dropSessions(t.id, self ? tokenOf(req) : null); }
