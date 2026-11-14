@@ -1050,7 +1050,8 @@ async function excelQ(q){
  var meta=[[D.no,q.no],[D.date,fmtD(q.date)]];if(d.valid&&q.valid)meta.push([D.valid,fmtD(q.valid)]);
  String(d.extra||"").split(/\r?\n/).forEach(function(x){x=x.trim();if(!x)return;var k=x.indexOf(":");meta.push(k>0?[x.slice(0,k).trim(),x.slice(k+1).trim()]:["",x])});
  if(q.by&&(q.by.name||q.by.phone)&&d.presenter!==false)meta.push([D.by,[q.by.name,q.by.phone].filter(Boolean).join(" - ")]);
- rr+=1;for(var mi=0;mi<meta.length;mi+=3){var chunk=meta.slice(mi,mi+3),span=Math.floor(N/chunk.length);rr++;chunk.forEach(function(m,k){var c1=k*span,c2=k===chunk.length-1?N-1:c1+span-1,runs=(m[0]?[{t:m[0]+": ",b:1,sz:BASE},{t:m[1],sz:BASE}]:[{t:m[1],sz:BASE}]);T(runs,{h:rtl?"right":"left",v:"center",bd:BA(thin),ro:ro},rr,c1,c2)})}
+ rr+=1;var MS={1:[[0,5]],2:[[0,2],[3,5]],3:[[0,1],[2,3],[4,5]],4:[[0,1],[2,2],[3,4],[5,5]]};
+ for(var mi=0;mi<meta.length;mi+=4){var chunk=meta.slice(mi,mi+4);rr++;chunk.forEach(function(m,k){var sp2=MS[chunk.length][k],runs=(m[0]?[{t:m[0]+": ",b:1,sz:BASE},{t:m[1],sz:BASE}]:[{t:m[1],sz:BASE}]);T(runs,{h:rtl?"right":"left",v:"center",bd:BA(thin),ro:ro},rr,sp2[0],sp2[1])})}
  rr++;
  /* ---------- client ---------- */
  var attn=q.attn!=null?q.attn:(nameSplit(cl.contact)[0]||""),cp=[[D.tel,cl.phone],[D.email,cl.email],[D.addr,cl.address]].filter(function(r){return r[1]});
@@ -1096,12 +1097,15 @@ async function excelQ(q){
   T([{t:"",sz:BASE}],{ro:ro},rr,rg[0],rg[1]);hz(rr,h+6);
   if(d.esLine!==false||(d.esName!==false&&nm2)){rr++;T([{t:d.esName!==false?nm2:"",b:1,sz:BASE}],{h:"center",bd:d.esLine!==false?{t:thin}:{},ro:ro},rr,rg[0],rg[1])}}
  if(d.sign||(d.stamp&&!stIn)||(P.stamp&&!stIn)){rr+=2;var bh=Math.max(+d.sigH||30,10)*2.83,sI=stIn?null:P.stamp;
-  if(d.sign){var sc=vrange(0,2);T([{t:D.sign_co,b:1,sz:BASE}],{h:"center",v:"center",bd:BA(thin),ro:ro},rr,sc[0],sc[1]);hz(rr,bh)}
-  var st2=vrange(4,5);
+  if(d.sign){var sc=[0,3];T([{t:D.sign_co,b:1,sz:BASE}],{h:"center",v:"center",bd:BA(thin),ro:ro},rr,sc[0],sc[1]);hz(rr,bh)}
+  var st2=d.sign?[4,5]:[0,5];
   if(sI){var hh=addImg(sI,rr,0,2,+d.stW||38,"center",st2[0],st2[1]);T([{t:"",sz:BASE}],{ro:ro},rr,st2[0],st2[1]);hz(rr,Math.max(bh,hh+6))}
   else if(d.stamp&&!stIn){T([{t:D.stamp,b:1,sz:BASE}],{h:"center",v:"center",bd:BA(thin),ro:ro},rr,st2[0],st2[1]);hz(rr,bh)}}
  if(d.footer){rr+=2;T([{t:d.footer,sz:Math.max(7,BASE-1)}],{h:"center",bd:{t:thin},w:1,ro:ro},rr,0,5)}
  /* ---------- serialize ---------- */
+ Object.keys(R).forEach(function(r){Object.keys(R[r]).forEach(function(c){var o=R[r][c],b=o.s.bd||{};o.s.bd=rtl?{l:b.r,r:b.l,t:b.t,b:b.b}:{l:b.l,r:b.r,t:b.t,b:b.b}})});
+ MG.forEach(function(m){var lo=Math.min(m[1],m[3]),hi=Math.max(m[1],m[3]),cl=rtl?hi:lo,cr=rtl?lo:hi,tl=R[m[0]][cl],an=tl;if(!an)return;var bd=an.s.bd;
+  bd.l=bd.l||(R[m[0]][cl]&&R[m[0]][cl].s.bd.l)||0;bd.r=(R[m[0]][cr]&&R[m[0]][cr].s.bd.r)||bd.r||0;bd.t=bd.t||0;bd.b=(R[m[2]]&&R[m[2]][cl]&&R[m[2]][cl].s.bd.b)||bd.b||0});
  var fonts=[],fidx={},borders=[],bidx={},xfs=[],xidx={};
  function fid(b,sz){var k=(b?1:0)+"|"+sz;if(fidx[k]==null){fidx[k]=fonts.length;fonts.push([b,sz])}return fidx[k]}
  function bkey(bd){return JSON.stringify([bd.l||0,bd.r||0,bd.t||0,bd.b||0])}
