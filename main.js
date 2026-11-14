@@ -189,7 +189,7 @@ function loadActivity() {
 
 /* who connected, from which IP, with what: kept for the admin "login activity" page */
 function ipOf(req) {
-  let a = (req && req.socket && req.socket.remoteAddress) || "";
+  let a = String((req && req.socket && req.socket.remoteAddress) || "").toLowerCase().split("%")[0];
   a = a.replace(/^::ffff:/, "");
   return a === "::1" ? "127.0.0.1" : a;
 }
@@ -419,7 +419,7 @@ function readBody(req, limit) {
 }
 
 const MIME = {
-  ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
+  ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".mp3": "audio/mpeg",
   ".css": "text/css; charset=utf-8", ".json": "application/json; charset=utf-8",
   ".png": "image/png", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".ttf": "font/ttf"
 };
@@ -724,9 +724,12 @@ function handleRequest(req, res) {
   catch (e) { try { if (!res.headersSent) res.writeHead(400); res.end(); } catch (e2) {} }
 }
 function handleRequest2(req, res) {
-  if (!cfg.remote && !isPrivateIp(ipOf(req)) && !(cfg.tailscale !== false && isTailscaleIp(ipOf(req)))) { res.writeHead(403, { "Content-Type": "text/plain" }); return res.end("Remote access is disabled"); }
   let u;
   try { u = new URL(req.url, "http://localhost"); } catch (e) { res.writeHead(400); return res.end(); }
+  if (!cfg.remote && !isPrivateIp(ipOf(req)) && !(cfg.tailscale !== false && isTailscaleIp(ipOf(req)))) {
+    if (u.pathname.indexOf("/api/") === 0) return sendJson(res, 403, { error: "remote_disabled" });
+    res.writeHead(403, { "Content-Type": "text/plain" }); return res.end("Remote access is disabled");
+  }
 
   if (u.pathname.indexOf("/api/") === 0) {
     handleApi(req, res, u.pathname).catch((e) => {
@@ -994,14 +997,19 @@ ipcMain.handle("pdf:save", async (e, o) => {
 ipcMain.handle("wa:open", async (e, o) => {
   const phone = String((o && o.phone) || "").replace(/\D/g, "");
   if (!phone) return false;
-  await shell.openExternal("https://wa.me/" + phone + "?text=" + encodeURIComponent(String((o && o.text) || "")));
+  await shell.openExternal("https://web.whatsapp.com/send/?phone=" + phone + "&text=" + encodeURIComponent(String((o && o.text) || "")));
   return true;
 });
 
 ipcMain.handle("mail:open", async (e, o) => {
   const to = String((o && o.to) || "").trim().slice(0, 200);
-  const q = "subject=" + encodeURIComponent(String((o && o.subject) || "").slice(0, 300)) + "&body=" + encodeURIComponent(String((o && o.body) || "").slice(0, 3000));
-  await shell.openExternal("mailto:" + encodeURIComponent(to).replace(/%40/g, "@") + "?" + q);
+  const provider = o && o.provider === "yahoo" ? "yahoo" : "gmail";
+  const subject = encodeURIComponent(String((o && o.subject) || "").slice(0, 300));
+  const body = encodeURIComponent(String((o && o.body) || "").slice(0, 3000));
+  const url = provider === "yahoo"
+    ? "https://compose.mail.yahoo.com/?to=" + encodeURIComponent(to) + "&subject=" + subject + "&body=" + body
+    : "https://mail.google.com/mail/?view=cm&fs=1&to=" + encodeURIComponent(to) + "&su=" + subject + "&body=" + body;
+  await shell.openExternal(url);
   return true;
 });
 
