@@ -308,13 +308,9 @@ function notifyLogin(kind, username, ip, ua) {
     new Notification({ title: t, body: (username || "?") + " - " + ip + (ua ? " - " + ua : ""), silent: false }).show();
   } catch (e) {}
 }
+// Failed sign-in attempts are logged, but never lock or block a user account.
 function bumpFail(u, ip, ua) {
-  u.fails = (u.fails || 0) + 1;
-  if (u.fails >= 10 && !u.locked) {
-    u.locked = true; persistUsers();
-    logAct("account_locked", u.username, ip, ua, "10 failed attempts");
-    secAlert("locked", u.username, ip, ua, u.fails, "1"); notifyLogin("locked", u.username, ip, ua);
-  }
+  if (u && u.fails) { u.fails = 0; persistUsers(); }
 }
 function failedAlert(key, username, ip, ua, exists, kind) {
   const a = alertCfg(), un = (attempts.get(key) || {}).n || 0, now = Date.now();
@@ -327,16 +323,11 @@ function failedAlert(key, username, ip, ua, exists, kind) {
   if (un === thr || un === 5 || f.n % thr === 0) secAlert(kind || "fail", username, ip, ua, Math.max(un, f.n), exists ? "1" : "0");
 }
 function failed(key) {
+  // Keep a counter for security logging only; no timed lockout is applied.
   const a = attempts.get(key) || { n: 0, until: 0 };
-  a.n++;
-  if (a.n >= 5 && !process.env.QM_TEST_LOCK) a.until = Date.now() + Math.min(300, 30 * Math.pow(2, a.n - 5)) * 1000;
-  a.t = Date.now();
+  a.n++; a.until = 0; a.t = Date.now();
   attempts.set(key, a);
-  if (attempts.size > 5000) {
-    const now = Date.now();
-    attempts.forEach((v, k) => { if (v.until < now && now - (v.t || 0) > 3600000) attempts.delete(k); });
-    if (attempts.size > 20000) attempts.clear();
-  }
+  if (attempts.size > 5000) attempts.clear();
 }
 const isLocal = (req) => ipOf(req) === "127.0.0.1";
 const lockExempt = (req) => !process.env.QM_TEST_LOCK && isLocal(req);
@@ -458,8 +449,6 @@ async function handleApi(req, res, p) {
 
   if (p === "/api/auth/login" && m === "POST") {
     const b = await readBody(req, 1e5), username = cleanUsername(b.username), key = ip + "|" + username;
-    const wait = lockWait(key);
-    if (wait) { logAct("locked", username, ip, ua); return sendJson(res, 429, { error: "locked", wait }); }
     const u = users.find((x) => x.username === username);
     // hash even for unknown users so response time does not reveal which usernames exist
     const ok = u ? await checkPw(u, b.password || "") : (await hashPw(b.password || "", "0".repeat(32)), false);
@@ -469,7 +458,6 @@ async function handleApi(req, res, p) {
       return sendJson(res, 401, { error: "bad_login" });
     }
     if (u.disabled) { logAct("login_failed", username, ip, ua, "disabled"); return sendJson(res, 403, { error: "disabled" }); }
-    if (u.locked && !lockExempt(req)) { logAct("login_failed", username, ip, ua, "account locked"); notifyLogin("fail", username, ip, ua); return sendJson(res, 423, { error: "account_locked" }); }
     if (!isPrivateIp(ip)) {   // outside the local network (public IP or Tailscale): a secret PIN is required as well
       if (!u.pinHash) { logAct("login_failed", username, ip, ua, "no pin set"); return sendJson(res, 403, { error: "pin_setup" }); }
       if (!b.pin) return sendJson(res, 200, { needPin: true });
@@ -493,8 +481,6 @@ async function handleApi(req, res, p) {
   /* the owner of a signature must confirm with their own username and password before it is placed on a quotation */
   if (p === "/api/sig/verify" && m === "POST") {
     const b = await readBody(req, 1e5), username = cleanUsername(b.username), key = ip + "|" + username;
-    const wait = lockWait(key);
-    if (wait) { logAct("locked", username, ip, ua); return sendJson(res, 429, { error: "locked", wait }); }
     const u = users.find((x) => x.username === username);
     const ok = u ? await checkPw(u, b.password || "") : (await hashPw(b.password || "", "0".repeat(32)), false);
     if (!ok || u.disabled) { failed(key); logAct("sign_failed", username, ip, ua, "by " + me.username); failedAlert(key, username, ip, ua, !!u, "sigfail"); return sendJson(res, 403, { error: "bad_login" }); }
