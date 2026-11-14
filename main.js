@@ -421,7 +421,7 @@ function readBody(req, limit) {
 const MIME = {
   ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8", ".json": "application/json; charset=utf-8",
-  ".png": "image/png", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".ttf": "font/ttf"
+  ".png": "image/png", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".ttf": "font/ttf", ".mp3": "audio/mpeg"
 };
 
 function sendRaw(res, code, body, headers) {
@@ -748,7 +748,7 @@ function handleRequest2(req, res) {
     if (req.headers["if-none-match"] === etag) { res.writeHead(304, { ETag: etag }); return res.end(); }
     fs.readFile(file, (err, buf) => {
       if (err) { res.writeHead(404); return res.end("Not found"); }
-      sendRaw(res, 200, buf, { "Content-Type": MIME[path.extname(file).toLowerCase()] || "application/octet-stream", "Cache-Control": "no-cache", ETag: etag });
+      sendRaw(res, 200, buf, { "Content-Type": MIME[path.extname(file).toLowerCase()] || "application/octet-stream", "Cache-Control": /\.(ttf|mp3|png)$/i.test(file) ? "public, max-age=604800" : "no-cache", ETag: etag });
     });
   });
 }
@@ -989,6 +989,13 @@ ipcMain.handle("pdf:save", async (e, o) => {
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, pdf);
   return target;
+});
+
+ipcMain.handle("url:open", async (e, u) => {
+  u = String(u || "");
+  if (!/^https:\/\/(web\.whatsapp\.com|wa\.me|mail\.google\.com|compose\.mail\.yahoo\.com|outlook\.live\.com)\//.test(u) || u.length > 6000) return false;
+  await shell.openExternal(u);
+  return true;
 });
 
 ipcMain.handle("wa:open", async (e, o) => {

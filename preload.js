@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld("api", {
   openSetup: () => ipcRenderer.invoke("cfg:setup"),
   pickExcel: () => ipcRenderer.invoke("excel:pick"),
   savePdf: (o) => ipcRenderer.invoke("pdf:save", o),
+  openUrl: (u) => ipcRenderer.invoke("url:open", u),
   openWhatsApp: (o) => ipcRenderer.invoke("wa:open", o),
   openMail: (o) => ipcRenderer.invoke("mail:open", o),
   pickBackupDir: () => ipcRenderer.invoke("backup:dir"),
