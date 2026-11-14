@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld("api", {
   pickBackupDir: () => ipcRenderer.invoke("backup:dir"),
   openBackupDir: () => ipcRenderer.invoke("backup:open"),
   setTailscale: (on) => ipcRenderer.invoke("ts:set", on),
+  setBind: (ip) => ipcRenderer.invoke("bind:set", ip),
   setRemote: (on) => ipcRenderer.invoke("remote:set", on),
   publicIp: () => ipcRenderer.invoke("ip:public"),
   setBackground: (on) => ipcRenderer.invoke("bg:set", on),

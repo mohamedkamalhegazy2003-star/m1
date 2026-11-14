@@ -339,7 +339,8 @@ function failed(key) {
     if (attempts.size > 20000) attempts.clear();
   }
 }
-const isLocal = (req) => ipOf(req) === "127.0.0.1";
+const ownIps = () => { const o = ["127.0.0.1"]; const nets = os.networkInterfaces(); Object.keys(nets).forEach((n) => (nets[n] || []).forEach((a) => { if (a.family === "IPv4") o.push(a.address); })); return o; };
+const isLocal = (req) => { const a = ipOf(req); return a === "127.0.0.1" || (cfg.bind && cfg.bind !== "0.0.0.0" && a === cfg.bind); };
 const lockExempt = (req) => !process.env.QM_TEST_LOCK && isLocal(req);
 
 /* ---------- which permission does a change to the shared data need? ---------- */
@@ -771,12 +772,21 @@ function handleRequest2(req, res) {
 function stopServer() {
   if (server) { try { server.close(); } catch (e) {} server = null; }
 }
+/* listen address: "" / 0.0.0.0 = every address of this PC; otherwise one dedicated IP of this PC (must exist on a network card) */
+function validBind(a) {
+  a = String(a || "").trim();
+  if (!a || a === "0.0.0.0") return "";
+  if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(a)) return null;
+  return ownIps().indexOf(a) >= 0 ? a : null;
+}
+function bindAddr() { const b = validBind(cfg.bind); return b === null ? "0.0.0.0" : (b || "0.0.0.0"); }
+function selfHost() { const b = bindAddr(); return b === "0.0.0.0" ? "127.0.0.1" : b; }
 function startServer(port) {
   stopServer();
   return new Promise((resolve, reject) => {
     const s = http.createServer(handleRequest);
     s.once("error", reject);
-    s.listen(port, "0.0.0.0", () => { server = s; resolve(); });
+    s.listen(port, bindAddr(), () => { server = s; resolve(); });
   });
 }
 
@@ -863,7 +873,7 @@ async function boot() {
       loadActivity();
       await startServer(cfg.port);
       updateTray();
-      w.loadURL("http://127.0.0.1:" + cfg.port + "/");
+      w.loadURL("http://" + selfHost() + ":" + cfg.port + "/");
     } catch (e) {
       w.show();
       showSetup("Cannot start the server on port " + cfg.port + ": " + e.message);
@@ -878,11 +888,16 @@ async function boot() {
 }
 
 /* ---------- IPC ---------- */
-const fromLocalFile = (e) => !!(e.senderFrame && String(e.senderFrame.url).indexOf("file:") === 0);
+/* IPC is only trusted from our own pages: the local setup file, or (server mode) the page this PC serves to itself */
+const fromLocalFile = (e) => {
+  const u = String((e.senderFrame && e.senderFrame.url) || "");
+  if (u.indexOf("file:") === 0) return true;
+  return cfg.mode === "server" && (u.indexOf("http://127.0.0.1:" + cfg.port + "/") === 0 || u.indexOf("http://" + selfHost() + ":" + cfg.port + "/") === 0);
+};
 
 ipcMain.handle("info:get", () => ({
   mode: cfg.mode, port: cfg.port, host: cfg.host, background: !!cfg.background, remote: !!cfg.remote, tailscale: cfg.tailscale !== false, tsIps: tailscaleAddresses(), packaged: app.isPackaged,
-  ips: lanAddresses(), dataFile: dataFile(), version: app.getVersion()
+  ips: bindAddr() === "0.0.0.0" ? lanAddresses() : [bindAddr()], allIps: ownIps().filter((x) => x !== "127.0.0.1"), bind: bindAddr() === "0.0.0.0" ? "" : bindAddr(), dataFile: dataFile(), version: app.getVersion()
 }));
 
 ipcMain.handle("cfg:set", async (e, c) => {
@@ -904,6 +919,21 @@ ipcMain.handle("bg:set", (e, on) => {
   applyAutostart();
   syncTray();
   return cfg.background;
+});
+
+ipcMain.handle("bind:set", async (e, ip) => {
+  if (!fromLocalFile(e)) return { ok: false, error: "denied" };
+  const v = validBind(ip);
+  if (v === null) return { ok: false, error: "bad_ip" };
+  const old = cfg.bind || "";
+  cfg.bind = v;
+  try { await startServer(cfg.port); }
+  catch (err) { cfg.bind = old; try { await startServer(cfg.port); } catch (x) {} return { ok: false, error: String(err.message || err) }; }
+  saveCfg(cfg);
+  sessions.clear();
+  let w = null; try { w = BrowserWindow.getAllWindows()[0]; } catch (x) {}
+  if (w) setTimeout(() => { try { w.loadURL("http://" + selfHost() + ":" + cfg.port + "/"); } catch (x) {} }, 150);
+  return { ok: true, bind: v };
 });
 
 ipcMain.handle("remote:set", (e, on) => {
