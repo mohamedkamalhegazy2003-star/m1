@@ -89,7 +89,8 @@ function logFailed(username, password, ip, ua, note) {
 }
 let actTimer = null;
 const sessions = new Map();   // token -> { uid, exp, ip, ua, created, seen }
-const attempts = new Map();   // "ip|username" -> { n, until }
+const attempts = new Map();
+const checkHits = new Map();   // ip -> { n, t } rate limit for the username check
 
 function writeJson(file, obj) {
   const tmp = file + ".tmp";
@@ -441,6 +442,18 @@ async function handleApi(req, res, p) {
   const m = req.method, ip = ipOf(req), ua = uaShort(req);
 
   /* ----- public: auth ----- */
+  if (p === "/api/auth/check" && m === "POST") {
+    /* tells the login form whether a username exists - only to devices on the local network (no username probing from outside) */
+    const ip0 = ipOf(req), now0 = Date.now();
+    const c0 = checkHits.get(ip0) || { n: 0, t: now0 };
+    if (now0 - c0.t > 60000) { c0.n = 0; c0.t = now0; }
+    if (++c0.n > 30) { checkHits.set(ip0, c0); return sendJson(res, 429, { error: "locked", wait: 30 }); }
+    checkHits.set(ip0, c0);
+    const b0 = await readBody(req, 2000);
+    if (!isPrivateIp(ip0)) return sendJson(res, 200, { ok: true });
+    const un0 = cleanUsername(b0.username), u0 = users.find((x) => x.username === un0);
+    return sendJson(res, 200, { ok: !!(u0 && !u0.disabled) });
+  }
   if (p === "/api/auth/status" && m === "GET") return sendJson(res, 200, { setup: users.length === 0, canSetup: isLocal(req) });
 
   if (p === "/api/auth/setup" && m === "POST") {
