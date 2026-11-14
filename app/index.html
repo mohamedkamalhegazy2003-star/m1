@@ -109,6 +109,7 @@ input:focus,select:focus,textarea:focus{outline:0;border-color:var(--ac);box-sha
 @keyframes qpop{from{opacity:0;transform:translate3d(0,8px,0) scale(.97)}to{opacity:1;transform:translate3d(0,0,0) scale(1)}}
 input:not([type=checkbox]):not([type=radio]):not([type=file]),select{min-height:46px}
 #splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:radial-gradient(circle at 50% 38%,#2b3170,#101226);color:#fff;transition:opacity .5s ease;text-align:center}
+.lb{animation:qpop .42s var(--ease) both}
 #splash.out{opacity:0;pointer-events:none}
 #splash img{width:140px;height:140px;object-fit:contain;background:#fff;border-radius:30px;padding:14px;box-shadow:0 12px 40px rgba(0,0,0,.45);animation:spl .9s cubic-bezier(.2,.9,.3,1.25) both,splf 2.4s ease-in-out .9s infinite}
 @keyframes spl{from{opacity:0;transform:scale(.35) rotate(-14deg)}to{opacity:1;transform:none}}
@@ -158,6 +159,8 @@ decline_prompt:"Reason for decline (price, timing, competitor, other):",unspecif
 declined_of:"Declined: {d} of {a} quotations ({p}%). Lost value: {v}",no_declined:"No declined quotations yet.",
 doc_lang:"Document language",lang_ar:"العربية",lang_en:"English",desktop_only:"This works in the desktop app only.",
 enter_phone:"Client WhatsApp number (with or without country code):",bad_phone:"Invalid phone number.",
+mail_provider_title:"Choose your email service",mail_provider_hint:"The quotation PDF will be downloaded. Attach it to the email before sending.",mail_gmail:"Gmail",mail_yahoo:"Yahoo Mail",mail_cancel:"Cancel",mail_attach_hint:"The quotation PDF was downloaded. Attach it to the email before sending.",
+err_remote_disabled:"Remote access is disabled. Enable Remote Access in Settings on the server, then try again.",err_pin_setup:"This connection is outside the local network. Ask the administrator to set a login PIN for your account.",err_bad_pin:"The login PIN is incorrect.",err_account_locked:"This account is locked. Ask an administrator to unlock it.",err_disabled:"This account is disabled. Ask an administrator.",
 wa_done:"PDF saved ({p}). WhatsApp is opening - attach the PDF from the folder that was opened.",pdf_done:"PDF saved: {p}",
 wa_msg:"Hello {c}, please find our quotation {n}. Total: {t}. - {co}",
 conflict:"The data was changed from another device and was reloaded. Please repeat your last change.",conn_err:"Cannot reach the server. Check the connection and restart the app.",save_err:"Could not save the data.",
@@ -211,6 +214,8 @@ decline_prompt:"سبب الرفض (السعر، التوقيت، منافس، أ
 declined_of:"المرفوضة: {d} من {a} عرض ({p}%). قيمة الخسارة: {v}",no_declined:"لا توجد عروض مرفوضة بعد.",
 doc_lang:"لغة المستند",lang_ar:"العربية",lang_en:"English",desktop_only:"هذه الميزة تعمل في برنامج سطح المكتب فقط.",
 enter_phone:"رقم واتساب العميل (بكود الدولة أو بدونه):",bad_phone:"رقم الهاتف غير صحيح.",
+mail_provider_title:"اختار خدمة البريد",mail_provider_hint:"سيتم تنزيل عرض السعر PDF. أرفقه بالرسالة قبل الإرسال.",mail_gmail:"جيميل",mail_yahoo:"ياهو",mail_cancel:"إلغاء",mail_attach_hint:"تم تنزيل عرض السعر PDF. أرفقه بالبريد قبل الإرسال.",
+err_remote_disabled:"الوصول من خارج الشبكة غير مفعّل. فعّل Remote Access من إعدادات جهاز السيرفر ثم حاول مرة أخرى.",err_pin_setup:"الاتصال من خارج الشبكة المحلية. اطلب من المدير تعيين PIN لتسجيل الدخول لحسابك.",err_bad_pin:"رمز PIN غير صحيح.",err_account_locked:"هذا الحساب مقفول. اطلب من المدير فتحه.",err_disabled:"هذا الحساب متوقف. اطلب من المدير تفعيله.",
 wa_done:"تم حفظ ملف PDF ({p}). يتم فتح واتساب - أرفق الملف من المجلد الذي فُتح.",pdf_done:"تم حفظ PDF: {p}",
 wa_msg:"مرحباً {c}، مرفق عرض السعر رقم {n}. الإجمالي: {t}. - {co}",
 conflict:"تم تغيير البيانات من جهاز آخر وتمت إعادة تحميلها. برجاء تكرار آخر تعديل.",conn_err:"تعذّر الاتصال بالسيرفر. تأكد من الاتصال ثم أعد تشغيل البرنامج.",save_err:"تعذّر حفظ البيانات.",
@@ -265,17 +270,67 @@ function errMsg(j){j=j||{};if(j.error==="locked")return t("err_locked",{s:j.wait
 async function load(){
  if(REMOTE){var r=await net("GET","/api/state");if(!r.ok)throw new Error(r.status===401?"auth":"HTTP "+r.status);rev=r.j.rev;S=fix(r.j.data||{});S.users=r.j.users||[]}
  else{var d=null;try{d=JSON.parse(localStorage.getItem(K))}catch(e){}S=fix(d||{});S.users=[ME]}
+ BASE=clone(S);delete BASE.users;
  var ch=false;["products","clients","companies"].forEach(function(k){if(canA(k,"edit")&&dedupe(S[k]))ch=true});
  if(ch&&!load.busy){load.busy=true;try{await save()}finally{load.busy=false}}}
-var DV=0;
-async function save(){DV++;
+var DV=0,BASE=null,MERGE_FAIL={};
+function dataEqual(a,b){return JSON.stringify(a)===JSON.stringify(b)}
+function mergeData(base,local,remote){
+ if(dataEqual(local,base))return clone(remote);
+ if(dataEqual(remote,base)||dataEqual(local,remote))return clone(local);
+ if(Array.isArray(base)&&Array.isArray(local)&&Array.isArray(remote)){
+  var all=base.concat(local,remote);
+  if(!all.every(function(x){return x&&typeof x==="object"&&!Array.isArray(x)&&x.id!=null}))return MERGE_FAIL;
+  var ids=function(a){return a.map(function(x){return String(x.id)})},bi=ids(base),li=ids(local),ri=ids(remote);
+  if(!dataEqual(li,bi)&&!dataEqual(ri,bi)&&!dataEqual(li,ri))return MERGE_FAIL;
+  var bm={},lm={},rm={},order=[],first=!dataEqual(li,bi)&&dataEqual(ri,bi)?local:remote;
+  base.forEach(function(x){bm[String(x.id)]=x});
+  local.forEach(function(x){lm[String(x.id)]=x});
+  remote.forEach(function(x){rm[String(x.id)]=x});
+  first.concat(first===local?remote:local,base).forEach(function(x){var k=String(x.id);if(order.indexOf(k)<0)order.push(k)});
+  var out=[];
+  for(var i=0;i<order.length;i++){
+   var k=order[i],hb=Object.prototype.hasOwnProperty.call(bm,k),hl=Object.prototype.hasOwnProperty.call(lm,k),hr=Object.prototype.hasOwnProperty.call(rm,k),v;
+   if(!hb){if(hl&&hr&&!dataEqual(lm[k],rm[k]))return MERGE_FAIL;v=hl?lm[k]:rm[k];if(v)out.push(clone(v));continue}
+   if(!hl){if(hr&&!dataEqual(rm[k],bm[k]))return MERGE_FAIL;continue}
+   if(!hr){if(!dataEqual(lm[k],bm[k]))return MERGE_FAIL;continue}
+   v=mergeData(bm[k],lm[k],rm[k]);if(v===MERGE_FAIL)return MERGE_FAIL;out.push(v)
+  }
+  return out
+ }
+ if(base&&local&&remote&&typeof base==="object"&&typeof local==="object"&&typeof remote==="object"&&!Array.isArray(base)&&!Array.isArray(local)&&!Array.isArray(remote)){
+  var keys=Object.keys(base).concat(Object.keys(local),Object.keys(remote)),seen={},out={};
+  for(var j=0;j<keys.length;j++){
+   var key=keys[j];if(seen[key])continue;seen[key]=1;
+   var hb=Object.prototype.hasOwnProperty.call(base,key),hl=Object.prototype.hasOwnProperty.call(local,key),hr=Object.prototype.hasOwnProperty.call(remote,key),v;
+   if(!hb){if(hl&&hr&&!dataEqual(local[key],remote[key]))return MERGE_FAIL;if(hl)out[key]=clone(local[key]);else if(hr)out[key]=clone(remote[key]);continue}
+   if(!hl){if(hr&&!dataEqual(remote[key],base[key]))return MERGE_FAIL;continue}
+   if(!hr){if(!dataEqual(local[key],base[key]))return MERGE_FAIL;continue}
+   v=mergeData(base[key],local[key],remote[key]);if(v===MERGE_FAIL)return MERGE_FAIL;out[key]=v
+  }
+  return out
+ }
+ return MERGE_FAIL
+}
+async function save(retries){retries=retries||0;DV++;
  var d=Object.assign({},S);delete d.users;
- if(!REMOTE){try{localStorage.setItem(K,JSON.stringify(d));return true}catch(e){alert(t("save_err"));return false}}
+ if(!REMOTE){try{localStorage.setItem(K,JSON.stringify(d));BASE=clone(d);return true}catch(e){alert(t("save_err"));return false}}
  try{var r=await net("PUT","/api/state",{rev:rev,data:d});
   if(r.status===401)return false;
-  if(r.status===409){alert(t("conflict"));await load();render();return false}
+  if(r.status===409){
+   if(retries<3){
+    var latest=await net("GET","/api/state");
+    if(latest.ok){
+     var remoteData=clone(latest.j.data||{}),merged=BASE?mergeData(BASE,d,remoteData):MERGE_FAIL;
+     rev=latest.j.rev;
+     if(merged!==MERGE_FAIL){S=fix(merged);S.users=latest.j.users||[];BASE=clone(remoteData);return await save(retries+1)}
+     S=fix(remoteData);S.users=latest.j.users||[];BASE=clone(remoteData)
+    }else await load()
+   }else await load();
+   alert(t("conflict"));render();return false
+  }
   if(r.status===403){alert(t("err_forbidden"));await load();render();return false}
-  if(!r.ok)throw new Error("HTTP "+r.status);rev=r.j.rev;return true}
+  if(!r.ok)throw new Error("HTTP "+r.status);rev=r.j.rev;BASE=clone(d);return true}
  catch(e){alert(t("save_err"));return false}}
 async function poll(){if(!REMOTE||editing||!TOKEN)return;
  try{var r=await net("GET","/api/rev");if(r.ok&&r.j.rev!==rev){await load();var pn=pendingReq();if(lastPend!==null&&pn>lastPend&&can("q_add"))playSnd("req");lastPend=pn;render()}}catch(e){}}
@@ -1069,16 +1124,23 @@ async function exportPdf(q,ask){if(!window.api){toast(t("desktop_only"));return 
  try{return await api.savePdf({html:qdoc(q,tb.dl||lang,tplById(tb.tpl||S.settings.defaultTpl)),name:q.no+" - "+qcn(q),ask:ask})}catch(e){alert(String(e.message||e));return null}}
 async function sendWA(q){
  var cl=qcl(q),ph=cl&&cl.phone||"";
- if(!ph){ph=prompt(t("enter_phone"),"")||"";if(!ph)return}
+ if(!ph){ph=prompt(t("enter_phone"),"+20")||"";if(!ph)return}
  var num=waNumber(ph);if(!num){alert(t("bad_phone"));return}
  if(cl&&!cl.phone&&can("cl_edit")){cl.phone=ph.trim();save()}
- if(!window.api){var co0=find(S.companies,q.companyId)||S.companies[0]||{},dl0=cur().dl||lang,tx0=(dl0==="ar"?T.ar:T.en).wa_msg.replace("{c}",qcn(q)).replace("{n}",q.no).replace("{t}",money(q.total)).replace("{co}",co0.name||"");window.open("https://wa.me/"+num+"?text="+encodeURIComponent(tx0),"_blank");toast(t("wa_browser"));return}
+ if(!window.api){var co0=find(S.companies,q.companyId)||S.companies[0]||{},dl0=cur().dl||lang,tx0=(dl0==="ar"?T.ar:T.en).wa_msg.replace("{c}",qcn(q)).replace("{n}",q.no).replace("{t}",money(q.total)).replace("{co}",co0.name||"");window.open("https://web.whatsapp.com/send/?phone="+num+"&text="+encodeURIComponent(tx0),"_blank");toast(t("wa_browser"));return}
  var p=await exportPdf(q,false);if(!p)return;
  var co=find(S.companies,q.companyId)||S.companies[0]||{},dl=cur().dl||lang;
  var text=(dl==="ar"?T.ar:T.en).wa_msg.replace("{c}",qcn(q)).replace("{n}",q.no).replace("{t}",money(q.total)).replace("{co}",co.name||"");
  await api.showFile(p);await api.openWhatsApp({phone:num,text:text});toast(t("wa_done",{p:p}))}
 
+function chooseMailProvider(){return new Promise(function(resolve){
+ var el=document.createElement("div");el.className="pop";
+ el.innerHTML='<div><h3>'+esc(t("mail_provider_title"))+'</h3><p>'+esc(t("mail_provider_hint"))+'</p><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px"><button type="button" class="btn" data-mail-provider="gmail">'+esc(t("mail_gmail"))+'</button><button type="button" class="btn" data-mail-provider="yahoo">'+esc(t("mail_yahoo"))+'</button><button type="button" class="btn o" data-mail-provider="cancel">'+esc(t("mail_cancel"))+'</button></div></div>';
+ el.addEventListener("click",function(e){var b=e.target.closest("[data-mail-provider]");if(!b){if(e.target===el){el.remove();resolve("")}return}var p=b.dataset.mailProvider;el.remove();resolve(p==="cancel"?"":p)});
+ document.body.appendChild(el)
+})}
 async function sendMail(q){
+ var provider=await chooseMailProvider();if(!provider)return;
  var cl=qcl(q),em=cl&&cl.email||"";
  if(!em){em=(prompt(t("enter_email"),"")||"").trim();if(!em)return}
  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){alert(t("bad_email"));return}
@@ -1086,9 +1148,20 @@ async function sendMail(q){
  var co=find(S.companies,q.companyId)||S.companies[0]||{},dl=cur().dl||lang,T0=dl==="ar"?T.ar:T.en,
  subj=T0.mail_subj.replace("{n}",q.no).replace("{co}",co.name||""),
  body=T0.wa_msg.replace("{c}",qcn(q)).replace("{n}",q.no).replace("{t}",money(q.total)).replace("{co}",co.name||"");
- if(!window.api){location.href="mailto:"+encodeURIComponent(em).replace(/%40/g,"@")+"?subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent(body);toast(t("mail_browser"));return}
- var p=await exportPdf(q,false);if(!p)return;
- await api.showFile(p);await api.openMail({to:em,subject:subj,body:body});toast(t("mail_done",{p:p}))}
+ if(window.api){
+  var p=await exportPdf(q,false);if(!p)return;
+  await api.showFile(p);await api.openMail({provider:provider,to:em,subject:subj,body:body});
+  toast(t("mail_done",{p:p}));return
+ }
+ var compose=window.open("about:blank","_blank");
+ var pdf=await webPdf(q);if(!pdf){if(compose)compose.close();return}
+ var nm=(q.no+" - "+qcn(q)).replace(/[\\/:*?"<>|]+/g,"_")+".pdf";saveBlob(pdf,nm);
+ var url=provider==="yahoo"
+  ?"https://compose.mail.yahoo.com/?to="+encodeURIComponent(em)+"&subject="+encodeURIComponent(subj)+"&body="+encodeURIComponent(body)
+  :"https://mail.google.com/mail/?view=cm&fs=1&to="+encodeURIComponent(em)+"&su="+encodeURIComponent(subj)+"&body="+encodeURIComponent(body);
+ if(compose)compose.location.href=url;else location.href=url;
+ toast(t("mail_attach_hint"))
+}
 
 /* ================= Excel import ================= */
 var IMP=null;
@@ -1277,7 +1350,7 @@ async function activityView(){
 async function showLogin(msg){
  document.body.classList.add("lo");var el=$("login");el.style.display="block";
  var st=null;try{st=await net("GET","/api/auth/status")}catch(e){}
- if(!st||!st.ok){el.innerHTML='<div class="card lb"><p>'+esc(t("conn_err"))+'</p></div>';return}
+ if(!st||!st.ok){var em=st&&st.j&&st.j.error==="remote_disabled"?t("err_remote_disabled"):t("conn_err");el.innerHTML='<div class="card lb"><p>'+esc(em)+'</p></div>';return}
  var setup=st.j.setup;
  if(setup&&!st.j.canSetup){el.innerHTML='<div class="card lb"><h2 style="margin-top:0">'+esc(t("app_title"))+'</h2><p>'+esc(t("setup_local"))+'</p><button class="btn o" id="lgl">'+esc(t("lang_btn"))+'</button></div>';$("lgl").onclick=function(){setLang(lang==="ar"?"en":"ar")};return}
  var h='<form class="card lb" id="lf"><h2 style="margin-top:0">'+esc(t(setup?"setup_title":"login_title"))+'</h2>'+(msg?'<p style="color:#a3182a">'+esc(msg)+'</p>':"");
@@ -1315,9 +1388,12 @@ function playSnd(ev,force){var c=sndCfg();if(!c.on&&!force)return;var w=c[ev];if
   AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state==="suspended")AC.resume();var now=AC.currentTime;
   (SND[w]||[]).forEach(function(n){var o=AC.createOscillator(),g=AC.createGain();o.type=n[3]||"triangle";o.frequency.value=n[0];o.connect(g);g.connect(AC.destination);var st=now+n[1],v=.18*c.vol;g.gain.setValueAtTime(0.0001,st);g.gain.exponentialRampToValueAtTime(v,st+.02);g.gain.exponentialRampToValueAtTime(0.0001,st+n[2]);o.start(st);o.stop(st+n[2]+.05)})}catch(e){}}
 document.addEventListener("pointerdown",function(){try{if(AC&&AC.state==="suspended")AC.resume()}catch(e){}},{passive:true});
+var welcomeAudio=null;
+function playWelcome(){var c=sndCfg();if(!c.on||c.login==="none")return;if(c.login==="custom"){playSnd("login");return}
+ try{if(!welcomeAudio)welcomeAudio=new Audio("audio/welcome.mp3");welcomeAudio.pause();welcomeAudio.currentTime=0;welcomeAudio.volume=Math.min(1,c.vol);var p=welcomeAudio.play();if(p&&p.catch)p.catch(function(){playSnd("login",true)})}catch(e){playSnd("login",true)}}
 function splash(){var tp=null;try{tp=tplById(S.settings.defaultTpl)}catch(e){}var logo=(tp&&tp.d&&tp.d.logo)||"favicon.png";
  var el=document.createElement("div");el.id="splash";el.innerHTML='<img alt="" src="'+esc(logo)+'"><h2>'+esc(t("splash_hi"))+' '+esc(ME?ME.name:"")+'</h2><p>'+esc(t("app_title"))+'</p><div class="bar"><i></i></div>';document.body.appendChild(el);
- playSnd("login");var done=function(){el.classList.add("out");setTimeout(function(){el.remove()},520)};el.onclick=done;setTimeout(done,2100)}
+ playWelcome();var done=function(){el.classList.add("out");setTimeout(function(){el.remove()},520)};el.onclick=done;setTimeout(done,2100)}
 function reqPopup(){var n=pendingReq(),k="qm_pop";if(!n||!can("q_add"))return;try{if(sessionStorage.getItem(k)==="1")return;sessionStorage.setItem(k,"1")}catch(e){}
  var el=document.createElement("div");el.className="pop";el.innerHTML='<div><h3>'+esc(t("m_req_all"))+'</h3><p>'+esc(t("req_pop",{n:n}))+'</p><p><button class="btn" id="pgo">'+esc(t("req_view"))+'</button> <button class="btn o" id="pno">'+esc(t("req_later"))+'</button></p></div>';document.body.appendChild(el);
  $("pgo").onclick=function(){el.remove();go("req:all")};$("pno").onclick=function(){el.remove()}}
