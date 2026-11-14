@@ -270,17 +270,67 @@ function errMsg(j){j=j||{};if(j.error==="locked")return t("err_locked",{s:j.wait
 async function load(){
  if(REMOTE){var r=await net("GET","/api/state");if(!r.ok)throw new Error(r.status===401?"auth":"HTTP "+r.status);rev=r.j.rev;S=fix(r.j.data||{});S.users=r.j.users||[]}
  else{var d=null;try{d=JSON.parse(localStorage.getItem(K))}catch(e){}S=fix(d||{});S.users=[ME]}
+ BASE=clone(S);delete BASE.users;
  var ch=false;["products","clients","companies"].forEach(function(k){if(canA(k,"edit")&&dedupe(S[k]))ch=true});
  if(ch&&!load.busy){load.busy=true;try{await save()}finally{load.busy=false}}}
-var DV=0;
-async function save(){DV++;
+var DV=0,BASE=null,MERGE_FAIL={};
+function dataEqual(a,b){return JSON.stringify(a)===JSON.stringify(b)}
+function mergeData(base,local,remote){
+ if(dataEqual(local,base))return clone(remote);
+ if(dataEqual(remote,base)||dataEqual(local,remote))return clone(local);
+ if(Array.isArray(base)&&Array.isArray(local)&&Array.isArray(remote)){
+  var all=base.concat(local,remote);
+  if(!all.every(function(x){return x&&typeof x==="object"&&!Array.isArray(x)&&x.id!=null}))return MERGE_FAIL;
+  var ids=function(a){return a.map(function(x){return String(x.id)})},bi=ids(base),li=ids(local),ri=ids(remote);
+  if(!dataEqual(li,bi)&&!dataEqual(ri,bi)&&!dataEqual(li,ri))return MERGE_FAIL;
+  var bm={},lm={},rm={},order=[],first=!dataEqual(li,bi)&&dataEqual(ri,bi)?local:remote;
+  base.forEach(function(x){bm[String(x.id)]=x});
+  local.forEach(function(x){lm[String(x.id)]=x});
+  remote.forEach(function(x){rm[String(x.id)]=x});
+  first.concat(first===local?remote:local,base).forEach(function(x){var k=String(x.id);if(order.indexOf(k)<0)order.push(k)});
+  var out=[];
+  for(var i=0;i<order.length;i++){
+   var k=order[i],hb=Object.prototype.hasOwnProperty.call(bm,k),hl=Object.prototype.hasOwnProperty.call(lm,k),hr=Object.prototype.hasOwnProperty.call(rm,k),v;
+   if(!hb){if(hl&&hr&&!dataEqual(lm[k],rm[k]))return MERGE_FAIL;v=hl?lm[k]:rm[k];if(v)out.push(clone(v));continue}
+   if(!hl){if(hr&&!dataEqual(rm[k],bm[k]))return MERGE_FAIL;continue}
+   if(!hr){if(!dataEqual(lm[k],bm[k]))return MERGE_FAIL;continue}
+   v=mergeData(bm[k],lm[k],rm[k]);if(v===MERGE_FAIL)return MERGE_FAIL;out.push(v)
+  }
+  return out
+ }
+ if(base&&local&&remote&&typeof base==="object"&&typeof local==="object"&&typeof remote==="object"&&!Array.isArray(base)&&!Array.isArray(local)&&!Array.isArray(remote)){
+  var keys=Object.keys(base).concat(Object.keys(local),Object.keys(remote)),seen={},out={};
+  for(var j=0;j<keys.length;j++){
+   var key=keys[j];if(seen[key])continue;seen[key]=1;
+   var hb=Object.prototype.hasOwnProperty.call(base,key),hl=Object.prototype.hasOwnProperty.call(local,key),hr=Object.prototype.hasOwnProperty.call(remote,key),v;
+   if(!hb){if(hl&&hr&&!dataEqual(local[key],remote[key]))return MERGE_FAIL;if(hl)out[key]=clone(local[key]);else if(hr)out[key]=clone(remote[key]);continue}
+   if(!hl){if(hr&&!dataEqual(remote[key],base[key]))return MERGE_FAIL;continue}
+   if(!hr){if(!dataEqual(local[key],base[key]))return MERGE_FAIL;continue}
+   v=mergeData(base[key],local[key],remote[key]);if(v===MERGE_FAIL)return MERGE_FAIL;out[key]=v
+  }
+  return out
+ }
+ return MERGE_FAIL
+}
+async function save(retries){retries=retries||0;DV++;
  var d=Object.assign({},S);delete d.users;
- if(!REMOTE){try{localStorage.setItem(K,JSON.stringify(d));return true}catch(e){alert(t("save_err"));return false}}
+ if(!REMOTE){try{localStorage.setItem(K,JSON.stringify(d));BASE=clone(d);return true}catch(e){alert(t("save_err"));return false}}
  try{var r=await net("PUT","/api/state",{rev:rev,data:d});
   if(r.status===401)return false;
-  if(r.status===409){alert(t("conflict"));await load();render();return false}
+  if(r.status===409){
+   if(retries<3){
+    var latest=await net("GET","/api/state");
+    if(latest.ok){
+     var remoteData=clone(latest.j.data||{}),merged=BASE?mergeData(BASE,d,remoteData):MERGE_FAIL;
+     rev=latest.j.rev;
+     if(merged!==MERGE_FAIL){S=fix(merged);S.users=latest.j.users||[];BASE=clone(remoteData);return await save(retries+1)}
+     S=fix(remoteData);S.users=latest.j.users||[];BASE=clone(remoteData)
+    }else await load()
+   }else await load();
+   alert(t("conflict"));render();return false
+  }
   if(r.status===403){alert(t("err_forbidden"));await load();render();return false}
-  if(!r.ok)throw new Error("HTTP "+r.status);rev=r.j.rev;return true}
+  if(!r.ok)throw new Error("HTTP "+r.status);rev=r.j.rev;BASE=clone(d);return true}
  catch(e){alert(t("save_err"));return false}}
 async function poll(){if(!REMOTE||editing||!TOKEN)return;
  try{var r=await net("GET","/api/rev");if(r.ok&&r.j.rev!==rev){await load();var pn=pendingReq();if(lastPend!==null&&pn>lastPend&&can("q_add"))playSnd("req");lastPend=pn;render()}}catch(e){}}
