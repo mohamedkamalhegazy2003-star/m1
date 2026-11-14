@@ -2,7 +2,7 @@ name: Build Windows installer
 
 on:
   push:
-    branches: ["feature/mobile-login-mail-whatsapp-welcome"]
+    branches: ["main", "feature/mobile-login-mail-whatsapp-welcome"]
     tags: ["v*"]
   workflow_dispatch:
 

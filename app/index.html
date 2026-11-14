@@ -1077,7 +1077,7 @@ async function sendWA(q){
  if(!ph){ph=prompt(t("enter_phone"),"+20")||"";if(!ph)return}
  var num=waNumber(ph);if(!num){alert(t("bad_phone"));return}
  if(cl&&!cl.phone&&can("cl_edit")){cl.phone=ph.trim();save()}
- if(!window.api){var co0=find(S.companies,q.companyId)||S.companies[0]||{},dl0=cur().dl||lang,tx0=(dl0==="ar"?T.ar:T.en).wa_msg.replace("{c}",qcn(q)).replace("{n}",q.no).replace("{t}",money(q.total)).replace("{co}",co0.name||"");window.open("https://wa.me/"+num+"?text="+encodeURIComponent(tx0),"_blank");toast(t("wa_browser"));return}
+ if(!window.api){var co0=find(S.companies,q.companyId)||S.companies[0]||{},dl0=cur().dl||lang,tx0=(dl0==="ar"?T.ar:T.en).wa_msg.replace("{c}",qcn(q)).replace("{n}",q.no).replace("{t}",money(q.total)).replace("{co}",co0.name||"");window.open("https://web.whatsapp.com/send/?phone="+num+"&text="+encodeURIComponent(tx0),"_blank");toast(t("wa_browser"));return}
  var p=await exportPdf(q,false);if(!p)return;
  var co=find(S.companies,q.companyId)||S.companies[0]||{},dl=cur().dl||lang;
  var text=(dl==="ar"?T.ar:T.en).wa_msg.replace("{c}",qcn(q)).replace("{n}",q.no).replace("{t}",money(q.total)).replace("{co}",co.name||"");

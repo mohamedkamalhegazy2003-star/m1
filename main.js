@@ -726,9 +726,8 @@ function handleRequest(req, res) {
 function handleRequest2(req, res) {
   let u;
   try { u = new URL(req.url, "http://localhost"); } catch (e) { res.writeHead(400); return res.end(); }
-  if (!cfg.remote && !isPrivateIp(ipOf(req)) && !(cfg.tailscale !== false && isTailscaleIp(ipOf(req)))) {
-    if (u.pathname.indexOf("/api/") === 0) return sendJson(res, 403, { error: "remote_disabled" });
-    res.writeHead(403, { "Content-Type": "text/plain" }); return res.end("Remote access is disabled");
+  if (!cfg.remote && !isPrivateIp(ipOf(req)) && !(cfg.tailscale !== false && isTailscaleIp(ipOf(req))) && u.pathname.indexOf("/api/") === 0) {
+    return sendJson(res, 403, { error: "remote_disabled" });
   }
 
   if (u.pathname.indexOf("/api/") === 0) {
