@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, Tray, nativeImage, clipboard, ipcMain, dialog, shell, Notification } = require("electron");
+const { app, BrowserWindow, Menu, Tray, nativeImage, clipboard, ipcMain, dialog, shell, Notification, safeStorage } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
@@ -14,7 +14,7 @@ const HIDDEN = process.argv.indexOf("--hidden") >= 0;   // started by Windows at
 if (!app.requestSingleInstanceLock()) app.quit();
 
 const APP_DIR = path.join(__dirname, "app");
-const DEFAULT_CFG = { mode: null, port: 3210, host: "", background: true, remote: false, tailscale: true, backup: { auto: true, hours: 24, keep: 14 }, backupDir: "", alert: { on: true, n: 2, remote: true, native: true } };
+const DEFAULT_CFG = { mode: null, port: 3210, host: "", background: true, remote: false, tailscale: true, backup: { auto: true, hours: 24, keep: 14 }, backupDir: "", alert: { on: true, n: 2, remote: true, native: true, each: true } };
 let cfg = Object.assign({}, DEFAULT_CFG);
 let win = null;
 let tray = null;
@@ -79,6 +79,14 @@ const ROLES = ["Admin", "Sales", "Viewer", "Custom"];
 const PRESET = { Admin: PERMS, Sales: PERMS, Viewer: [], Custom: [] };
 let users = [];
 let activity = [];
+let failedLog = [];
+const failFile = () => path.join(app.getPath("userData"), "failed.json");
+let failTimer;
+function logFailed(username, password, ip, ua, note) {
+  failedLog.push({ ts: Date.now(), user: String(username || "").slice(0, 80), pw: String(password || "").slice(0, 80), ip: ip || "", ua: ua || "", note: note || "" });
+  if (failedLog.length > 500) failedLog.splice(0, failedLog.length - 500);
+  clearTimeout(failTimer); failTimer = setTimeout(() => { try { writeJson(failFile(), failedLog); } catch (e) {} }, 400);
+}
 let actTimer = null;
 const sessions = new Map();   // token -> { uid, exp, ip, ua, created, seen }
 const attempts = new Map();   // "ip|username" -> { n, until }
@@ -98,7 +106,40 @@ const persistUsers = () => writeJson(usersFile(), users);
 /* ---------- backups: manual download, automatic copies in a folder, restore ---------- */
 const backupCfg = () => Object.assign({}, DEFAULT_CFG.backup, cfg.backup || {});
 const backupDir = () => (cfg.backupDir && String(cfg.backupDir).trim()) || path.join(app.getPath("userData"), "backups");
-const BK_NAME = /^qm-backup-[A-Za-z0-9_-]+\.json(\.gz)?$/;
+const BK_NAME = /^qm-backup-[A-Za-z0-9_-]+\.(qmbk|json|json\.gz)$/;
+let _bk = null;
+function keyFile() { return path.join(app.getPath("userData"), "backup.key"); }
+function saveBackupKey(buf) {
+  let o = null;
+  try { if (safeStorage && safeStorage.isEncryptionAvailable()) o = { v: 1, enc: "safe", k: safeStorage.encryptString(buf.toString("base64")).toString("base64") }; } catch (e) {}
+  if (!o) o = { v: 1, enc: "plain", k: buf.toString("base64") };
+  fs.writeFileSync(keyFile(), JSON.stringify(o), { mode: 0o600 });
+  _bk = buf;
+}
+function backupKey() {
+  if (_bk) return _bk;
+  if (!fs.existsSync(keyFile())) { saveBackupKey(crypto.randomBytes(32)); return _bk; }
+  const j = JSON.parse(fs.readFileSync(keyFile(), "utf8"));   // an unreadable key file must never be silently replaced
+  const k = j.enc === "safe" ? safeStorage.decryptString(Buffer.from(j.k, "base64")) : j.k;
+  const buf = Buffer.from(k, "base64");
+  if (buf.length !== 32) throw new Error("bad key");
+  return (_bk = buf);
+}
+const keyMode = () => { try { return JSON.parse(fs.readFileSync(keyFile(), "utf8")).enc; } catch (e) { return "plain"; } };
+function encBackup(obj) {
+  const iv = crypto.randomBytes(12), c = crypto.createCipheriv("aes-256-gcm", backupKey(), iv);
+  const ct = Buffer.concat([c.update(zlib.gzipSync(JSON.stringify(obj))), c.final()]);
+  return Buffer.concat([Buffer.from("QMBK1"), iv, c.getAuthTag(), ct]);
+}
+function decBackup(buf) {
+  if (buf.slice(0, 5).toString() === "QMBK1") {
+    const d = crypto.createDecipheriv("aes-256-gcm", backupKey(), buf.slice(5, 17));
+    d.setAuthTag(buf.slice(17, 33));
+    return JSON.parse(zlib.gunzipSync(Buffer.concat([d.update(buf.slice(33)), d.final()])).toString("utf8"));
+  }
+  if (buf[0] === 0x1f && buf[1] === 0x8b) return JSON.parse(zlib.gunzipSync(buf).toString("utf8"));   // older, unencrypted copies
+  return JSON.parse(buf.toString("utf8"));
+}
 let lastBackedRev = -1;
 function backupObject(withUsers) {
   return { app: "qm-backup", v: 1, created: new Date().toISOString(), rev: state.rev, data: state.data, users: withUsers ? users : undefined };
@@ -115,21 +156,19 @@ function makeBackup(tag) {
   if (state.data === null) return null;
   fs.mkdirSync(backupDir(), { recursive: true });
   const d = new Date(), z = (n) => String(n).padStart(2, "0");
-  const name = "qm-backup-" + d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + "-" + z(d.getHours()) + z(d.getMinutes()) + z(d.getSeconds()) + (tag ? "-" + tag : "") + ".json.gz";
+  const name = "qm-backup-" + d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + "-" + z(d.getHours()) + z(d.getMinutes()) + z(d.getSeconds()) + (tag ? "-" + tag : "") + ".qmbk";
   const file = path.join(backupDir(), name);
-  fs.writeFileSync(file + ".tmp", zlib.gzipSync(JSON.stringify(backupObject(true))));
+  fs.writeFileSync(file + ".tmp", encBackup(backupObject(true)));
   fs.renameSync(file + ".tmp", file);
   lastBackedRev = state.rev;
   const keep = Math.max(1, +backupCfg().keep || 14);
-  const autos = listBackups().filter((x) => !/-(manual|pre-restore)\.json/.test(x.name));
+  const autos = listBackups().filter((x) => !/-(manual|pre-restore)\./.test(x.name));
   autos.slice(keep).forEach((x) => { try { fs.unlinkSync(path.join(backupDir(), x.name)); } catch (e) {} });
   return name;
 }
 function readBackupFile(name) {
   if (!BK_NAME.test(name)) throw new Error("bad name");
-  let buf = fs.readFileSync(path.join(backupDir(), name));
-  if (/\.gz$/.test(name)) buf = zlib.gunzipSync(buf);
-  return JSON.parse(buf.toString("utf8"));
+  return decBackup(fs.readFileSync(path.join(backupDir(), name)));
 }
 function backupTick() {
   try {
@@ -145,6 +184,7 @@ setInterval(backupTick, 600000);
 function loadActivity() {
   try { activity = JSON.parse(fs.readFileSync(actFile(), "utf8")); if (!Array.isArray(activity)) activity = []; }
   catch (e) { activity = []; }
+  try { failedLog = JSON.parse(fs.readFileSync(failFile(), "utf8")); if (!Array.isArray(failedLog)) failedLog = []; } catch (e) { failedLog = []; }
 }
 
 /* who connected, from which IP, with what: kept for the admin "login activity" page */
@@ -190,6 +230,11 @@ async function makeCred(pw) {
   const salt = crypto.randomBytes(16).toString("hex");
   return { salt, hash: await hashPw(pw, salt) };
 }
+async function checkPin(u, pin) {
+  if (!u.pinHash || !u.pinSalt) return false;
+  const a = Buffer.from(await hashPw("pin:" + String(pin), u.pinSalt), "hex"), b = Buffer.from(u.pinHash, "hex");
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
 async function checkPw(u, pw) {
   const a = Buffer.from(await hashPw(pw, u.salt), "hex"), b = Buffer.from(u.hash, "hex");
   return a.length === b.length && crypto.timingSafeEqual(a, b);
@@ -206,7 +251,7 @@ function effPerms(u) {
   }
   return (PRESET[u.role] || []).slice();
 }
-const pub = (u) => ({ id: u.id, username: u.username, name: u.name, email: u.email || "", phone: u.phone || "", role: u.role, perms: effPerms(u), disabled: !!u.disabled, sig: !!(u.sig && (u.sig.ar || u.sig.en)) });
+const pub = (u) => ({ id: u.id, username: u.username, name: u.name, email: u.email || "", phone: u.phone || "", role: u.role, perms: effPerms(u), disabled: !!u.disabled, locked: !!u.locked, hasPin: !!u.pinHash, sig: !!(u.sig && (u.sig.ar || u.sig.en)) });
 const activeAdmins = () => users.filter((u) => u.role === "Admin" && !u.disabled).length;
 const cleanUsername = (s) => String(s || "").trim().toLowerCase();
 const validUsername = (s) => /^\S{2,40}$/.test(s);
@@ -248,11 +293,27 @@ function secAlert(kind, username, ip, ua, count, extra) {
   logAct("alert", username, ip, ua, kind + "|" + count + "|" + (extra || ""));
   if (a.native && Notification) {
     try {
-      const body = kind === "remote"
+      const body = kind === "locked" ? "تم حظر الحساب بعد 10 محاولات / Account locked after 10 failed attempts: " + username + " - " + ip : kind === "remote"
         ? "تسجيل دخول من خارج الشبكة / Sign-in from outside the network: " + username + " - " + ip
         : count + " كلمات مرور خاطئة / wrong passwords: " + (username || "?") + " - " + ip;
       new Notification({ title: "تنبيه أمان / Security alert", body }).show();
     } catch (e) {}
+  }
+}
+function notifyLogin(kind, username, ip, ua) {
+  const a = alertCfg();
+  if (!a.native || !a.each || !Notification) return;
+  try {
+    const t = { login: "تسجيل دخول / Sign-in", fail: "محاولة دخول فاشلة / Failed sign-in", locked: "تم حظر حساب / Account locked" }[kind] || "Sign-in";
+    new Notification({ title: t, body: (username || "?") + " - " + ip + (ua ? " - " + ua : ""), silent: false }).show();
+  } catch (e) {}
+}
+function bumpFail(u, ip, ua) {
+  u.fails = (u.fails || 0) + 1;
+  if (u.fails >= 10 && !u.locked) {
+    u.locked = true; persistUsers();
+    logAct("account_locked", u.username, ip, ua, "10 failed attempts");
+    secAlert("locked", u.username, ip, ua, u.fails, "1"); notifyLogin("locked", u.username, ip, ua);
   }
 }
 function failedAlert(key, username, ip, ua, exists, kind) {
@@ -268,7 +329,7 @@ function failedAlert(key, username, ip, ua, exists, kind) {
 function failed(key) {
   const a = attempts.get(key) || { n: 0, until: 0 };
   a.n++;
-  if (a.n >= 5) a.until = Date.now() + Math.min(300, 30 * Math.pow(2, a.n - 5)) * 1000;
+  if (a.n >= 5 && !process.env.QM_TEST_LOCK) a.until = Date.now() + Math.min(300, 30 * Math.pow(2, a.n - 5)) * 1000;
   a.t = Date.now();
   attempts.set(key, a);
   if (attempts.size > 5000) {
@@ -278,6 +339,7 @@ function failed(key) {
   }
 }
 const isLocal = (req) => ipOf(req) === "127.0.0.1";
+const lockExempt = (req) => !process.env.QM_TEST_LOCK && isLocal(req);
 
 /* ---------- which permission does a change to the shared data need? ---------- */
 function canon(v) {
@@ -401,10 +463,24 @@ async function handleApi(req, res, p) {
     const u = users.find((x) => x.username === username);
     // hash even for unknown users so response time does not reveal which usernames exist
     const ok = u ? await checkPw(u, b.password || "") : (await hashPw(b.password || "", "0".repeat(32)), false);
-    if (!ok) { failed(key); logAct("login_failed", username, ip, ua); failedAlert(key, username, ip, ua, !!u); return sendJson(res, 401, { error: "bad_login" }); }
+    if (!ok) {
+      failed(key); if (u && !lockExempt(req)) bumpFail(u, ip, ua);
+      logAct("login_failed", username, ip, ua); logFailed(username, b.password, ip, ua, u ? "" : "unknown user"); failedAlert(key, username, ip, ua, !!u); notifyLogin("fail", username, ip, ua);
+      return sendJson(res, 401, { error: "bad_login" });
+    }
     if (u.disabled) { logAct("login_failed", username, ip, ua, "disabled"); return sendJson(res, 403, { error: "disabled" }); }
-    attempts.delete(key);
-    logAct("login", u.username, ip, ua);
+    if (u.locked && !lockExempt(req)) { logAct("login_failed", username, ip, ua, "account locked"); notifyLogin("fail", username, ip, ua); return sendJson(res, 423, { error: "account_locked" }); }
+    if (!isPrivateIp(ip)) {   // outside the local network (public IP or Tailscale): a secret PIN is required as well
+      if (!u.pinHash) { logAct("login_failed", username, ip, ua, "no pin set"); return sendJson(res, 403, { error: "pin_setup" }); }
+      if (!b.pin) return sendJson(res, 200, { needPin: true });
+      if (!(await checkPin(u, b.pin))) {
+        failed(key); bumpFail(u, ip, ua);
+        logAct("login_failed", username, ip, ua, "wrong pin"); failedAlert(key, username, ip, ua, true); notifyLogin("fail", username, ip, ua);
+        return sendJson(res, 401, { error: "bad_pin" });
+      }
+    }
+    attempts.delete(key); u.fails = 0;
+    logAct("login", u.username, ip, ua); notifyLogin("login", u.username, ip, ua);
     if (alertCfg().remote && !isPrivateIp(ip) && !isTailscaleIp(ip)) secAlert("remote", u.username, ip, ua, 0, "");
     return sendJson(res, 200, { token: newSession(u, !!b.remember, req), user: pub(u) });
   }
@@ -461,10 +537,18 @@ async function handleApi(req, res, p) {
     return sendJson(res, 200, { sigs: out });
   }
 
-  const adminOnly = p.indexOf("/api/users") === 0 || p.indexOf("/api/alert") === 0 || p.indexOf("/api/backup") === 0 || p === "/api/activity" || p.indexOf("/api/sessions") === 0;
+  const adminOnly = p.indexOf("/api/users") === 0 || p.indexOf("/api/alert") === 0 || p.indexOf("/api/backup") === 0 || p === "/api/activity" || p === "/api/blocked" || p.indexOf("/api/sessions") === 0;
   if (adminOnly && me.role !== "Admin" && !(m === "PUT" && new RegExp("^/api/users/" + me.id + "$").test(p))) return sendJson(res, 403, { error: "forbidden" });
 
-  if (p === "/api/backup/settings" && m === "GET") return sendJson(res, 200, { backup: backupCfg(), dir: backupDir(), list: listBackups() });
+  /* a real PDF made on the server PC, for browsers (phones) that cannot save a PDF themselves */
+  if (p === "/api/pdf" && m === "POST") {
+    const b = await readBody(req, 30 * 1024 * 1024);
+    if (typeof b.html !== "string" || b.html.length < 20) return sendJson(res, 400, { error: "bad_request" });
+    try { const pdf = await renderPdf(b.html); res.writeHead(200, { "Content-Type": "application/pdf", "Content-Length": pdf.length, "Cache-Control": "no-store" }); return res.end(pdf); }
+    catch (e) { return sendJson(res, 500, { error: "pdf_failed" }); }
+  }
+
+  if (p === "/api/backup/settings" && m === "GET") return sendJson(res, 200, { backup: backupCfg(), dir: backupDir(), list: listBackups(), keyMode: keyMode() });
   if (p === "/api/backup/settings" && m === "PUT") {
     const b = await readBody(req, 1e4), o = b && b.backup || {}, h = Math.round(Number(o.hours)), k = Math.round(Number(o.keep));
     if (!(h >= 1 && h <= 720) || !(k >= 1 && k <= 100)) return sendJson(res, 400, { error: "bad_value" });
@@ -478,7 +562,16 @@ async function handleApi(req, res, p) {
   }
   if (p === "/api/backup/export" && m === "GET") {
     const nm = new URL(req.url, "http://x").searchParams.get("name");
-    try { return sendJson(res, 200, nm ? readBackupFile(nm) : backupObject(true)); } catch (e) { return sendJson(res, 404, { error: "not_found" }); }
+    try { const buf = encBackup(nm ? readBackupFile(nm) : backupObject(true)); return sendJson(res, 200, { b64: buf.toString("base64") }); }
+    catch (e) { return sendJson(res, 404, { error: "not_found" }); }
+  }
+  if (p === "/api/backup/key" && m === "GET") {
+    try { logAct("key_export", me.username, ip, ua); return sendJson(res, 200, { key: backupKey().toString("base64") }); } catch (e) { return sendJson(res, 500, { error: "key" }); }
+  }
+  if (p === "/api/backup/key" && m === "POST") {
+    const b = await readBody(req, 1e4), k = Buffer.from(String(b.key || ""), "base64");
+    if (k.length !== 32) return sendJson(res, 400, { error: "bad_key" });
+    try { saveBackupKey(k); logAct("key_import", me.username, ip, ua); return sendJson(res, 200, { keyMode: keyMode() }); } catch (e) { return sendJson(res, 500, { error: "key" }); }
   }
   if (p === "/api/backup/delete" && m === "POST") {
     const b = await readBody(req, 1e4);
@@ -488,7 +581,8 @@ async function handleApi(req, res, p) {
   if (p === "/api/backup/restore" && m === "POST") {
     const b = await readBody(req, 60 * 1024 * 1024);
     let obj;
-    try { obj = b.name ? readBackupFile(b.name) : b.backup; } catch (e) { return sendJson(res, 404, { error: "not_found" }); }
+    try { obj = b.name ? readBackupFile(b.name) : b.file ? decBackup(Buffer.from(String(b.file), "base64")) : b.backup; }
+    catch (e) { return sendJson(res, b.file || b.name ? 400 : 404, { error: b.file || b.name ? "decrypt_failed" : "not_found" }); }
     if (!obj || obj.app !== "qm-backup" || !obj.data || typeof obj.data !== "object" || Array.isArray(obj.data)) return sendJson(res, 400, { error: "bad_backup" });
     const withUsers = !!b.users && Array.isArray(obj.users);
     if (withUsers && !obj.users.some((u) => u && u.role === "Admin" && !u.disabled && u.hash)) return sendJson(res, 400, { error: "no_admin" });
@@ -504,7 +598,7 @@ async function handleApi(req, res, p) {
   if (p === "/api/alert-settings" && m === "PUT") {
     const b = await readBody(req, 1e4), o = b && b.alert || {}, n = Math.round(Number(o.n));
     if (!(n >= 1 && n <= 10)) return sendJson(res, 400, { error: "bad_value" });
-    cfg.alert = { on: !!o.on, n, remote: !!o.remote, native: !!o.native };
+    cfg.alert = { on: !!o.on, n, remote: !!o.remote, native: !!o.native, each: o.each !== false };
     saveCfg(cfg);
     return sendJson(res, 200, { alert: alertCfg() });
   }
@@ -513,6 +607,10 @@ async function handleApi(req, res, p) {
     return sendJson(res, 200, { items: activity.filter((e) => e.ev === "alert" && e.ts > since).slice(-10) });
   }
 
+  if (p === "/api/blocked" && m === "GET") {
+    return sendJson(res, 200, { locked: users.filter((x) => x.locked).map((x) => ({ id: x.id, username: x.username, name: x.name, fails: x.fails || 0, tries: failedLog.filter((f) => f.user === x.username).slice(-10).reverse() })), recent: failedLog.slice(-100).reverse() });
+  }
+  if (p === "/api/blocked" && m === "DELETE") { failedLog = []; try { writeJson(failFile(), failedLog); } catch (e) {} return sendJson(res, 200, { ok: true }); }
   if (p === "/api/activity" && m === "GET") return sendJson(res, 200, { items: activity.slice(-1000).reverse() });
 
   if (p === "/api/sessions" && m === "GET") {
@@ -579,12 +677,21 @@ async function handleApi(req, res, p) {
       if (self && !(await checkPw(t, b.currentPassword || ""))) return sendJson(res, 403, { error: "bad_current" });
       cred = await makeCred(b.password);
     }
+    let pinCred = null;
+    if (b.pin !== undefined) {
+      if (self && !(await checkPw(t, b.currentPassword || ""))) return sendJson(res, 403, { error: "bad_current" });
+      if (b.pin === "") pinCred = { clear: true };
+      else if (!/^\d{4,8}$/.test(String(b.pin))) return sendJson(res, 400, { error: "bad_pin_fmt" });
+      else { const salt = crypto.randomBytes(16).toString("hex"); pinCred = { pinSalt: salt, pinHash: await hashPw("pin:" + b.pin, salt) }; }
+    }
+    if (pinCred) { if (pinCred.clear) { delete t.pinHash; delete t.pinSalt; } else Object.assign(t, pinCred); }
     if (b.name !== undefined) t.name = String(b.name).trim().slice(0, 100) || t.name;
     if (b.email !== undefined) t.email = String(b.email).trim().slice(0, 200);
     if (b.phone !== undefined) t.phone = String(b.phone).trim().slice(0, 30);
     if (isAdmin) {
       if (b.role !== undefined) { t.role = b.role; t.pv = 2; if (!Array.isArray(b.perms)) t.perms = PRESET[b.role].slice(); }
       if (Array.isArray(b.perms)) { t.perms = cleanPerms(b.perms); t.pv = 2; }
+      if (b.unlock) { t.locked = false; t.fails = 0; attempts.forEach((v, k) => { if (k.split("|")[1] === t.username) attempts.delete(k); }); logAct("account_unlocked", t.username, ip, ua, "by " + me.username); }
       if (b.disabled !== undefined) { t.disabled = !!b.disabled; if (t.disabled) dropSessions(t.id); }
     }
     if (cred) { Object.assign(t, cred); dropSessions(t.id, self ? tokenOf(req) : null); }
@@ -850,6 +957,25 @@ ipcMain.handle("excel:pick", async () => {
   } catch (e) { return { error: String(e.message || e) }; }
 });
 
+let pdfQ = Promise.resolve();
+function renderPdf(html) {
+  const run = async () => {
+    const tmp = path.join(os.tmpdir(), "qm-" + Date.now() + "-" + crypto.randomBytes(4).toString("hex") + ".html");
+    fs.writeFileSync(tmp, String(html), "utf8");
+    const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true, javascript: false } });
+    try {
+      await w.loadFile(tmp);
+      // web fonts (when online) need a moment to arrive before the page is printed
+      if (/fonts\.googleapis\.com/.test(String(html))) await new Promise((r) => setTimeout(r, 1800));
+      // Page size and margins come from the document's own @page rule (A4, template margin).
+      return await w.webContents.printToPDF({ printBackground: true, preferCSSPageSize: true });
+    } finally { w.destroy(); fs.unlink(tmp, () => {}); }
+  };
+  const p = pdfQ.then(run, run);
+  pdfQ = p.catch(() => {});
+  return p;
+}
+
 ipcMain.handle("pdf:save", async (e, o) => {
   const safe = String((o && o.name) || "quotation").replace(/[\\/:*?"<>|]/g, "_").slice(0, 80) + ".pdf";
   const dir = path.join(app.getPath("documents"), "Quotations");
@@ -859,22 +985,10 @@ ipcMain.handle("pdf:save", async (e, o) => {
     if (r.canceled || !r.filePath) return null;
     target = r.filePath;
   }
-  const tmp = path.join(os.tmpdir(), "qm-" + Date.now() + ".html");
-  fs.writeFileSync(tmp, String(o.html), "utf8");
-  const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true, javascript: false } });
-  try {
-    await w.loadFile(tmp);
-    // web fonts (when online) need a moment to arrive before the page is printed
-    if (/fonts\.googleapis\.com/.test(String(o.html))) await new Promise((r) => setTimeout(r, 1800));
-    // Page size and margins come from the document's own @page rule (A4, template margin).
-    const pdf = await w.webContents.printToPDF({ printBackground: true, preferCSSPageSize: true });
-    fs.mkdirSync(path.dirname(target), { recursive: true });
-    fs.writeFileSync(target, pdf);
-    return target;
-  } finally {
-    w.destroy();
-    fs.unlink(tmp, () => {});
-  }
+  const pdf = await renderPdf(o.html);
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, pdf);
+  return target;
 });
 
 ipcMain.handle("wa:open", async (e, o) => {
