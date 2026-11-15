@@ -1067,6 +1067,16 @@ ipcMain.handle("mail:open", async (e, o) => {
 
 ipcMain.handle("file:show", (e, p) => { if (p) shell.showItemInFolder(String(p)); return true; });
 
+/* put the saved PDF on the Windows clipboard as a file, so Ctrl+V inside a WhatsApp chat attaches it */
+ipcMain.handle("file:clip", (e, p) => new Promise((resolve) => {
+  try {
+    if (!fromLocalFile(e) || process.platform !== "win32" || !p) return resolve(false);
+    const f = String(p);
+    if (!fs.existsSync(f)) return resolve(false);
+    require("child_process").execFile("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", "Set-Clipboard -LiteralPath '" + f.replace(/'/g, "''") + "'"], { windowsHide: true, timeout: 10000 }, (err) => resolve(!err));
+  } catch (x) { resolve(false); }
+}));
+
 /* ---------- lifecycle ---------- */
 app.on("second-instance", () => showWin());
 process.on("exit", () => { try { flushState(); } catch (e) {} });

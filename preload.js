@@ -16,5 +16,6 @@ contextBridge.exposeInMainWorld("api", {
   setRemote: (on) => ipcRenderer.invoke("remote:set", on),
   publicIp: () => ipcRenderer.invoke("ip:public"),
   setBackground: (on) => ipcRenderer.invoke("bg:set", on),
+  copyFile: (p) => ipcRenderer.invoke("file:clip", p),
   showFile: (p) => ipcRenderer.invoke("file:show", p)
 });
