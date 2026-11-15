@@ -73,10 +73,21 @@ function stateJson() {
 const scrypt = util.promisify(crypto.scrypt);
 const usersFile = () => path.join(app.getPath("userData"), "users.json");
 const actFile = () => path.join(app.getPath("userData"), "activity.json");
-const PERMS = ["q_add", "q_edit", "q_del", "q_send", "q_approve", "cl_add", "cl_edit", "cl_del", "pr_add", "pr_edit", "pr_del", "rq_add", "rq_edit", "rq_del", "company", "tpl"];
+const PERMS = ["q_add", "q_edit", "q_del", "q_send", "q_approve", "cl_add", "cl_edit", "cl_del", "pr_add", "pr_edit", "pr_del", "rq_add", "rq_edit", "rq_del", "company", "tpl", "v_q", "v_cl", "v_pr", "v_rq", "q_all", "q_export", "q_share", "rep", "imp"];
+// permissions added in pv 3: accounts saved before them keep what they could already do (see everything, export, share)
+const NEWP = ["v_q", "v_cl", "v_pr", "v_rq", "q_all", "q_export", "q_share", "rep", "imp"];
 const LEGACY = { clients: ["cl_add", "cl_edit", "cl_del"], products: ["pr_add", "pr_edit", "pr_del"], requests: ["rq_add", "rq_edit", "rq_del"] };
-const ROLES = ["Admin", "Sales", "Viewer", "Custom"];
-const PRESET = { Admin: PERMS, Sales: PERMS, Viewer: [], Custom: [] };
+const ROLES = ["Admin", "Manager", "Sales", "Accountant", "Warehouse", "Viewer", "Custom"];
+const VIEWALL = ["v_q", "v_cl", "v_pr", "v_rq", "q_all"];
+const PRESET = {
+  Admin: PERMS,
+  Manager: PERMS.filter((p) => p !== "company" && p !== "tpl"),
+  Sales: VIEWALL.concat(["q_add", "q_edit", "q_send", "q_export", "q_share", "cl_add", "cl_edit", "pr_add", "pr_edit", "rq_add", "rq_edit", "rep", "imp"]),
+  Accountant: VIEWALL.concat(["q_send", "q_approve", "q_export", "q_share", "rep"]),
+  Warehouse: ["v_pr", "v_rq", "v_cl", "pr_add", "pr_edit", "rq_add", "rq_edit", "imp"],
+  Viewer: VIEWALL.concat(["q_export", "rep"]),
+  Custom: []
+};
 let users = [];
 let activity = [];
 let failedLog = [];
@@ -244,10 +255,11 @@ function effPerms(u) {
   if (u.role === "Admin") return PERMS.slice();
   if (Array.isArray(u.perms)) {
     let a = u.perms.slice();
-    if (u.pv !== 2) {   // accounts saved before detailed permissions: keep what they could do
+    if (u.pv !== 2 && u.pv !== 3) {   // accounts saved before detailed permissions: keep what they could do
       a.slice().forEach((p) => { if (LEGACY[p]) a = a.concat(LEGACY[p]); });
       if (a.indexOf("q_edit") >= 0) a.push("q_send");
     }
+    if (u.pv !== 3) a = a.concat(NEWP);
     return a.filter((p, i) => PERMS.indexOf(p) >= 0 && a.indexOf(p) === i);
   }
   return (PRESET[u.role] || []).slice();
@@ -556,6 +568,7 @@ async function handleApi(req, res, p) {
 
   /* a real PDF made on the server PC, for browsers (phones) that cannot save a PDF themselves */
   if (p === "/api/pdf" && m === "POST") {
+    if (myPerms.indexOf("q_export") < 0 && myPerms.indexOf("rep") < 0) return sendJson(res, 403, { error: "no_perm" });
     const b = await readBody(req, 30 * 1024 * 1024);
     if (typeof b.html !== "string" || b.html.length < 20) return sendJson(res, 400, { error: "bad_request" });
     try { const pdf = await renderPdf(b.html); res.writeHead(200, { "Content-Type": "application/pdf", "Content-Length": pdf.length, "Cache-Control": "no-store" }); return res.end(pdf); }
@@ -654,7 +667,7 @@ async function handleApi(req, res, p) {
     if (!validPw(b.password)) return sendJson(res, 400, { error: "weak" });
     if (ROLES.indexOf(b.role) < 0) return sendJson(res, 400, { error: "bad_role" });
     const perms = cleanPerms(b.perms) || PRESET[b.role].slice();
-    const u = Object.assign({ id: nextUserId(), username, name: String(b.name || username).trim().slice(0, 100) || username, email: String(b.email || "").trim().slice(0, 200), phone: String(b.phone || "").trim().slice(0, 30), role: b.role, perms, pv: 2, disabled: false }, await makeCred(b.password));
+    const u = Object.assign({ id: nextUserId(), username, name: String(b.name || username).trim().slice(0, 100) || username, email: String(b.email || "").trim().slice(0, 200), phone: String(b.phone || "").trim().slice(0, 30), role: b.role, perms, pv: 3, disabled: false }, await makeCred(b.password));
     users.push(u); persistUsers();
     return sendJson(res, 200, { user: pub(u) });
   }
@@ -703,8 +716,8 @@ async function handleApi(req, res, p) {
     if (b.email !== undefined) t.email = String(b.email).trim().slice(0, 200);
     if (b.phone !== undefined) t.phone = String(b.phone).trim().slice(0, 30);
     if (isAdmin) {
-      if (b.role !== undefined) { t.role = b.role; t.pv = 2; if (!Array.isArray(b.perms)) t.perms = PRESET[b.role].slice(); }
-      if (Array.isArray(b.perms)) { t.perms = cleanPerms(b.perms); t.pv = 2; }
+      if (b.role !== undefined) { t.role = b.role; t.pv = 3; if (!Array.isArray(b.perms)) t.perms = PRESET[b.role].slice(); }
+      if (Array.isArray(b.perms)) { t.perms = cleanPerms(b.perms); t.pv = 3; }
       if (b.unlock) { t.locked = false; t.fails = 0; attempts.forEach((v, k) => { if (k.split("|")[1] === t.username) attempts.delete(k); }); logAct("account_unlocked", t.username, ip, ua, "by " + me.username); }
       if (b.disabled !== undefined) { t.disabled = !!b.disabled; if (t.disabled) dropSessions(t.id); }
     }
