@@ -145,6 +145,34 @@ input:not([type=checkbox]):not([type=radio]):not([type=file]),select{min-height:
 #toast{animation:qpop .22s var(--ease) backwards}
 .tb.on{transition:background-color .2s var(--ease)}
 @media(max-width:760px){aside{transition:transform .28s var(--ease);will-change:transform}}
+/* ---- smooth motion layer (transform/opacity only, so it stays fast) ---- */
+:root{--ease2:cubic-bezier(.22,1,.36,1)}
+main{scroll-behavior:smooth}
+aside{animation:asin .5s var(--ease2) backwards}main{animation:qfade .45s ease-out backwards}
+@keyframes asin{from{opacity:0;transform:translate3d(-18px,0,0)}to{opacity:1;transform:none}}
+[dir=rtl] aside,html[dir=rtl] aside{animation-name:asinr}@keyframes asinr{from{opacity:0;transform:translate3d(18px,0,0)}to{opacity:1;transform:none}}
+#v.anim>*{animation:qin .32s var(--ease2) backwards}
+#v.anim>*:nth-child(2){animation-delay:.05s}#v.anim>*:nth-child(3){animation-delay:.1s}#v.anim>*:nth-child(n+4){animation-delay:.15s}
+#v.anim tbody tr,#v.anim table tr{animation:rin .3s var(--ease2) backwards}
+#v.anim tr:nth-child(2){animation-delay:.03s}#v.anim tr:nth-child(3){animation-delay:.06s}#v.anim tr:nth-child(4){animation-delay:.09s}#v.anim tr:nth-child(5){animation-delay:.12s}#v.anim tr:nth-child(6){animation-delay:.15s}#v.anim tr:nth-child(7){animation-delay:.18s}#v.anim tr:nth-child(8){animation-delay:.21s}#v.anim tr:nth-child(n+9){animation-delay:.24s}
+@keyframes rin{from{opacity:0;transform:translate3d(0,8px,0)}to{opacity:1;transform:none}}
+.g.open .sub>button{animation:sbi .28s var(--ease2) backwards}
+.g.open .sub>button:nth-child(2){animation-delay:.04s}.g.open .sub>button:nth-child(3){animation-delay:.08s}.g.open .sub>button:nth-child(4){animation-delay:.12s}.g.open .sub>button:nth-child(n+5){animation-delay:.16s}
+@keyframes sbi{from{opacity:0;transform:translate3d(10px,-4px,0)}to{opacity:1;transform:none}}
+[dir=rtl] .g.open .sub>button{animation-name:sbir}@keyframes sbir{from{opacity:0;transform:translate3d(-10px,-4px,0)}to{opacity:1;transform:none}}
+.sub button:hover{transform:translateX(3px)}[dir=rtl] .sub button:hover{transform:translateX(-3px)}
+.sub button:active{transform:scale(.97)}
+.btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.12)}.btn:active{transform:translateY(0) scale(.97);box-shadow:none}
+tbody tr,.card table tr{transition:background-color .15s var(--ease)}
+.card table tr:hover td{background:rgba(120,130,180,.07)}
+.tb.on{box-shadow:inset 0 -2px 0 var(--ac)}.tb{transition:background-color .2s var(--ease),box-shadow .25s var(--ease2),transform .14s var(--ease)}
+.pgc,.kp>div{transition:transform .2s var(--ease2),box-shadow .2s var(--ease2)}.pgc:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.08)}
+.dlg-ov.out{animation:fout .14s ease forwards;pointer-events:none}.dlg-ov.out .dlg{animation:dout .14s ease forwards}
+@keyframes fout{to{opacity:0}}@keyframes dout{to{opacity:0;transform:translate3d(0,8px,0) scale(.97)}}
+.dlg{animation:qpop .26s var(--ease2)}
+#toast.out{animation:tout .2s ease forwards}@keyframes tout{to{opacity:0;transform:translate(-50%,8px)}}
+.pk input[type=checkbox]{transition:transform .15s var(--ease2)}.pk input[type=checkbox]:active{transform:scale(.85)}
+.lspin,.spin{will-change:transform}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 </style></head><body>
 <aside id="side"></aside>
@@ -372,7 +400,7 @@ function money(n){return(+n||0).toLocaleString("en-US",{minimumFractionDigits:2,
 var _id=0;function nextId(){_id=Math.max(_id+1,Date.now()*1000);return _id}
 /* older imports could give several rows the same id; give duplicates fresh ids */
 function dedupe(a){var seen={},ch=false;a.forEach(function(r){var k=String(r.id);if(seen[k]){r.id=nextId();ch=true}seen[r.id]=1});return ch}
-function toast(m){var e=$("toast");e.textContent=m;e.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(function(){e.style.display="none"},6000)}
+function toast(m){var e=$("toast");e.classList.remove("out");e.textContent=m;e.style.display="block";clearTimeout(toast.t);clearTimeout(toast.t2);toast.t=setTimeout(function(){e.classList.add("out");toast.t2=setTimeout(function(){e.style.display="none";e.classList.remove("out")},200)},6000)}
 function digits(s){return String(s).replace(/[٠-٩]/g,function(c){return c.charCodeAt(0)-1632}).replace(/[۰-۹]/g,function(c){return c.charCodeAt(0)-1776})}
 function waNumber(p,cc0){var s=String(p).trim(),intl=/^(\+|00)/.test(s),d=digits(s).replace(/\D/g,""),cc=cc0||S.settings.cc||"20";
  if(/^00/.test(d))d=d.slice(2);
@@ -1238,7 +1266,7 @@ async function excelQ(q){
 async function exportPdf(q,ask){if(!window.api){toast(t("desktop_only"));return null}var tb=cur();
  try{return await api.savePdf({html:qdoc(q,tb.dl||lang,tplById(tb.tpl||S.settings.defaultTpl)),name:q.no+" - "+qcn(q),ask:ask})}catch(e){alert(String(e.message||e));return null}}
 function dlg(title,body,btns){return new Promise(function(res){var o=document.createElement("div");o.className="dlg-ov";o.innerHTML='<div class="dlg" role="dialog"><h3>'+esc(title)+'</h3><div>'+body+'</div><div class="bt">'+btns.map(function(b,i){return'<button class="btn '+(b.c||"")+'" data-i="'+i+'">'+esc(b.l)+'</button>'}).join("")+'</div></div>';document.body.appendChild(o);
- function close(v){var vals={};o.querySelectorAll("input,select").forEach(function(x){if(x.id)vals[x.id]=x.value});o.remove();res({v:v,vals:vals})}
+ function close(v){var vals={};o.querySelectorAll("input,select").forEach(function(x){if(x.id)vals[x.id]=x.value});o.classList.add("out");setTimeout(function(){o.remove()},150);res({v:v,vals:vals})}
  o.onclick=function(e){if(e.target===o)return close(null);var b=e.target.closest("[data-i]");if(b)close(btns[+b.dataset.i].v)};
  o.onkeydown=function(e){if(e.key==="Escape")close(null);else if(e.key==="Enter"&&e.target.tagName==="INPUT"){var d=btns.filter(function(b){return b.def})[0];if(d)close(d.v)}};
  var f=o.querySelector("input[autofocus],#wph,#mto");if(f)f.focus()})}
