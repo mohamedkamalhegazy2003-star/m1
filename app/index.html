@@ -1371,6 +1371,16 @@ function crExcel(R){var dl=(cur().dl||lang),rtl=dl==="ar",L=function(k){return t
  xsMerge(sh,r,0,r,4,L("total"),{b:1,sz:11,color:"FFFFFF",fill:NAVY,h:al,ind:1});xsPut(sh,r,5,{f:refs.length?"SUM("+refs.join(",")+")":"0",v:st.sum},{b:1,sz:11,color:"FFFFFF",fill:NAVY,h:"right",nf:1});sh.h[r]=24;
  saveBlob(xsFile(sh,{name:L("cr_title"),cols:[16,13,13,13,12,17],rtl:rtl,font:fname,sz:10}),(L("cr_title")+" - "+c.name).replace(/[\\\/:*?"<>|]+/g,"_")+".xlsx")}
 
+/* keyboard fixes: give the page its focus back after native dialogs; arrow keys move between quantity / price cells */
+(function(){["alert","confirm","prompt"].forEach(function(n){var o=window[n];window[n]=function(){var r=o.apply(window,arguments);setTimeout(function(){try{if(window.api&&api.refocus)api.refocus();var a=document.activeElement;if(a&&a.blur&&a.focus){a.blur();a.focus()}}catch(e){}},30);return r}});
+ document.addEventListener("keydown",function(e){var k=e.key;if(k!=="ArrowUp"&&k!=="ArrowDown"&&k!=="ArrowLeft"&&k!=="ArrowRight")return;var el=e.target;if(!el||el.tagName!=="INPUT"||el.type!=="number"||e.altKey||e.ctrlKey||e.metaKey)return;
+  var row=el.closest(".line,.rline");if(!row)return;var all=[].slice.call(document.querySelectorAll("#v .line input[type=number],#v .rline input[type=number]")).filter(function(x){return x.offsetParent&&!x.disabled});
+  var me=el.getBoundingClientRect(),best=null,bd=1e9;
+  all.forEach(function(x){if(x===el)return;var r=x.getBoundingClientRect(),dx=(r.left+r.width/2)-(me.left+me.width/2),dy=(r.top+r.height/2)-(me.top+me.height/2),ok,d;
+   if(k==="ArrowUp"){ok=dy<-4&&Math.abs(dx)<me.width*.8;d=-dy+Math.abs(dx)*3}else if(k==="ArrowDown"){ok=dy>4&&Math.abs(dx)<me.width*.8;d=dy+Math.abs(dx)*3}
+   else if(k==="ArrowLeft"){ok=dx<-4&&Math.abs(dy)<me.height;d=-dx+Math.abs(dy)*3}else{ok=dx>4&&Math.abs(dy)<me.height;d=dx+Math.abs(dy)*3}
+   if(ok&&d<bd){bd=d;best=x}});
+  if(best){e.preventDefault();best.focus();try{best.select()}catch(x){}}else if(k==="ArrowUp"||k==="ArrowDown")e.preventDefault()},true)})();
 /* ================= Excel import ================= */
 var IMP=null;
 /* header aliases (Arabic + English); normalised with nz() below */

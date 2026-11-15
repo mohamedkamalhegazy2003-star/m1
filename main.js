@@ -19,7 +19,7 @@ let cfg = Object.assign({}, DEFAULT_CFG);
 let win = null;
 let tray = null;
 let quitting = false;
-let startHidden = HIDDEN;
+let startHidden = false;   // the window now always opens at login; the server keeps running in the tray when it is closed
 let server = null;
 let state = { rev: 0, data: null };
 
@@ -38,7 +38,7 @@ function saveCfg(c) {
 /* start with Windows, in the background (only meaningful for the installed app) */
 function applyAutostart() {
   if (!app.isPackaged) return;
-  try { app.setLoginItemSettings({ openAtLogin: !!(cfg.background && cfg.mode), args: ["--hidden"] }); } catch (e) {}
+  try { app.setLoginItemSettings({ openAtLogin: !!(cfg.background && cfg.mode), args: [] }); } catch (e) {}
 }
 
 /* ---------- shared data (lives on the server device only) ---------- */
@@ -845,6 +845,10 @@ function createWindow() {
     if (!quitting && tray && cfg.background && cfg.mode) { e.preventDefault(); win.hide(); }
   });
   win.on("closed", () => { win = null; });
+  // Windows sometimes leaves the page without keyboard focus (after a native dialog, or when started at login): give it back
+  win.on("focus", () => { try { win.webContents.focus(); } catch (e) {} });
+  win.once("ready-to-show", () => { if (!win.isVisible()) win.show(); win.focus(); });
+  win.webContents.on("did-finish-load", () => { try { if (win.isVisible()) { win.focus(); win.webContents.focus(); } } catch (e) {} });
   win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   win.webContents.on("did-fail-load", (e, code, desc, url, isMain) => {
     if (!isMain || code === -3) return; // -3 = aborted by a newer navigation
@@ -1076,6 +1080,8 @@ ipcMain.handle("file:clip", (e, p) => new Promise((resolve) => {
     require("child_process").execFile("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", "Set-Clipboard -LiteralPath '" + f.replace(/'/g, "''") + "'"], { windowsHide: true, timeout: 10000 }, (err) => resolve(!err));
   } catch (x) { resolve(false); }
 }));
+
+ipcMain.on("win:refocus", () => { try { if (win && !win.isDestroyed()) { win.blur(); win.focus(); win.webContents.focus(); } } catch (e) {} });
 
 /* ---------- lifecycle ---------- */
 app.on("second-instance", () => showWin());
