@@ -1,9 +1,11 @@
 {
   "name": "quotation-management",
-  "version": "1.25.0",
+  "version": "1.26.0",
   "description": "Quotation Management desktop app",
   "main": "main.js",
-  "author": "Your Name",
+  "author": {
+    "name": "Mohamed Hegazy"
+  },
   "license": "MIT",
   "scripts": {
     "start": "electron .",
@@ -25,13 +27,25 @@
       "output": "dist"
     },
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "build/icon.ico",
+      "publisherName": [
+        "Mohamed Hegazy"
+      ],
+      "legalTrademarks": "Mohamed Hegazy"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true
-    }
+      "createDesktopShortcut": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "installerSidebar": "build/installerSidebar.bmp",
+      "uninstallerSidebar": "build/installerSidebar.bmp",
+      "shortcutName": "Quotation Management"
+    },
+    "copyright": "Copyright © Mohamed Hegazy"
   },
   "dependencies": {
     "xlsx": "0.18.5"
