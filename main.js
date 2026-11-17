@@ -496,7 +496,7 @@ async function handleApi(req, res, p) {
     }
     if (u.disabled) { logAct("login_failed", username, ip, ua, "disabled"); return sendJson(res, 403, { error: "disabled" }); }
     if (u.locked && !lockExempt(req)) { logAct("login_failed", username, ip, ua, "account locked"); notifyLogin("fail", username, ip, ua); return sendJson(res, 423, { error: "account_locked" }); }
-    if (!isPrivateIp(ip)) {   // outside the local network (public IP or Tailscale): a secret PIN is required as well
+    if (cfg.pinReq !== false && (process.env.QM_TEST_PUBLIC || !isPrivateIp(ip))) {   // outside the local network (public IP or Tailscale): a secret PIN is required as well (the admin can switch this off)
       if (!u.pinHash) { logAct("login_failed", username, ip, ua, "no pin set"); return sendJson(res, 403, { error: "pin_setup" }); }
       if (!b.pin) return sendJson(res, 200, { needPin: true });
       if (!(await checkPin(u, b.pin))) {
@@ -621,13 +621,14 @@ async function handleApi(req, res, p) {
     logAct("restore", me.username, ip, ua, withUsers ? "users" : "");
     return sendJson(res, 200, { rev: state.rev });
   }
-  if (p === "/api/alert-settings" && m === "GET") return sendJson(res, 200, { alert: alertCfg() });
+  if (p === "/api/alert-settings" && m === "GET") return sendJson(res, 200, { alert: alertCfg(), pinReq: cfg.pinReq !== false });
   if (p === "/api/alert-settings" && m === "PUT") {
     const b = await readBody(req, 1e4), o = b && b.alert || {}, n = Math.round(Number(o.n));
     if (!(n >= 1 && n <= 10)) return sendJson(res, 400, { error: "bad_value" });
     cfg.alert = { on: !!o.on, n, remote: !!o.remote, native: !!o.native, each: o.each !== false };
+    if (b.pinReq !== undefined) { cfg.pinReq = !!b.pinReq; logAct("pin_policy", me.username, ip, ua, cfg.pinReq ? "on" : "off"); }
     saveCfg(cfg);
-    return sendJson(res, 200, { alert: alertCfg() });
+    return sendJson(res, 200, { alert: alertCfg(), pinReq: cfg.pinReq !== false });
   }
   if (p === "/api/alerts" && m === "GET") {
     const since = Number(new URL(req.url, "http://x").searchParams.get("since")) || 0;
