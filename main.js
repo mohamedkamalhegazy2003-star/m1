@@ -11,7 +11,10 @@ let XLSX = null;
 try { XLSX = require("xlsx"); } catch (e) { /* reported to the UI when an import is attempted */ }
 
 const HIDDEN = process.argv.indexOf("--hidden") >= 0;   // started by Windows at login: stay in the tray
-if (!app.requestSingleInstanceLock()) app.quit();
+// Only one copy may run. A second launch must NOT start its own window/server (that was the "opens and closes in a second" flash):
+// it just hands over to the running copy (see "second-instance" below) and leaves.
+const GOT_LOCK = app.requestSingleInstanceLock();
+if (!GOT_LOCK) { app.quit(); }
 
 const APP_DIR = path.join(__dirname, "app");
 const DEFAULT_CFG = { mode: null, port: 3210, host: "", background: true, remote: false, tailscale: true, backup: { auto: true, hours: 24, keep: 14 }, backupDir: "", alert: { on: true, n: 2, remote: true, native: true, each: true } };
@@ -844,6 +847,7 @@ function syncTray() {
   updateTray();
 }
 
+let netTries = 0;
 function createWindow() {
   if (win && !win.isDestroyed()) return win;
   win = new BrowserWindow({
@@ -862,11 +866,13 @@ function createWindow() {
   // Windows sometimes leaves the page without keyboard focus (after a native dialog, or when started at login): give it back
   win.on("focus", () => { try { win.webContents.focus(); } catch (e) {} });
   win.once("ready-to-show", () => { if (!win.isVisible()) win.show(); win.focus(); });
-  win.webContents.on("did-finish-load", () => { try { if (win.isVisible()) { win.focus(); win.webContents.focus(); } } catch (e) {} });
+  win.webContents.on("did-finish-load", () => { netTries = 0; try { if (win.isVisible()) { win.focus(); win.webContents.focus(); } } catch (e) {} });
   win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   win.webContents.on("did-fail-load", (e, code, desc, url, isMain) => {
     if (!isMain || code === -3) return; // -3 = aborted by a newer navigation
     if (url && url.indexOf("file:") === 0) return;
+    // started with Windows: the network may not be up yet - keep retrying quietly for about a minute before showing an error
+    if (cfg.mode === "terminal" && cfg.host && (netTries = (netTries || 0) + 1) <= 20) { setTimeout(() => { try { if (win && !win.isDestroyed()) win.loadURL("http://" + cfg.host + ":" + cfg.port + "/"); } catch (x) {} }, 3000); return; }
     showSetup(desc + " (" + url + ")");
   });
   return win;
@@ -889,7 +895,8 @@ async function boot() {
       loadState();
       loadUsers();
       loadActivity();
-      await startServer(cfg.port);
+      // right after a restart the port can still be busy for a moment: retry a few times before giving up
+      for (let i = 0; ; i++) { try { await startServer(cfg.port); break; } catch (er) { if (i >= 6 || !er || er.code !== "EADDRINUSE") throw er; await new Promise((r) => setTimeout(r, 1500)); } }
       updateTray();
       w.loadURL("http://" + selfHost() + ":" + cfg.port + "/");
     } catch (e) {
@@ -1098,11 +1105,11 @@ ipcMain.handle("file:clip", (e, p) => new Promise((resolve) => {
 ipcMain.on("win:refocus", () => { try { if (win && !win.isDestroyed()) { win.blur(); win.focus(); win.webContents.focus(); } } catch (e) {} });
 
 /* ---------- lifecycle ---------- */
-app.on("second-instance", () => showWin());
-process.on("exit", () => { try { flushState(); } catch (e) {} });
+app.on("second-instance", () => { try { showWin(); if (win && !win.isDestroyed()) { win.setAlwaysOnTop(true); win.focus(); setTimeout(() => { try { win.setAlwaysOnTop(false); } catch (e) {} }, 400); } } catch (e) {} });
+if (GOT_LOCK) process.on("exit", () => { try { flushState(); } catch (e) {} });
 app.on("before-quit", () => { quitting = true; try { flushState(); } catch (e) {} });
 
-app.whenReady().then(() => {
+if (GOT_LOCK) app.whenReady().then(() => {
   Menu.setApplicationMenu(null);
   boot();
   app.on("activate", () => { if (BrowserWindow.getAllWindows().length === 0) boot(); });
