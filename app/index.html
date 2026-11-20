@@ -75,9 +75,10 @@ body.lo aside,body.lo main{display:none}
 .cbo{display:flex;justify-content:space-between;gap:10px;padding:8px 10px;cursor:pointer;font-size:14px}.cbo small{color:var(--mu);white-space:nowrap}.cbo.on,.cbo:hover{background:var(--ac);color:#fff}.cbo.on small,.cbo:hover small{color:#fff}.cbe{padding:10px;color:var(--mu);font-size:14px}
 #toast{position:fixed;bottom:20px;inset-inline-start:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:8px;max-width:90vw;display:none;z-index:20;font-size:14px}
 #mb{display:none}
-@media(max-width:760px){body{display:block;height:auto;overflow:visible}main{height:auto;overflow:visible;direction:var(--d,rtl)}aside{position:fixed;z-index:5;left:0;top:0;transform:translateX(-100%);transition:transform .2s;padding-top:calc(20px + env(safe-area-inset-top,0px))}
-[dir=rtl] aside{left:auto;right:0;transform:translateX(100%)}aside.show,[dir=rtl] aside.show{transform:none}
+@media(max-width:900px){body{display:block;height:auto;min-height:100vh;overflow:visible}main{height:auto;overflow:visible;direction:var(--d,rtl)}aside{position:fixed;z-index:5;left:0;top:0;height:100vh;height:100dvh;transform:translateX(-100%);transition:transform .2s;padding-top:calc(20px + env(safe-area-inset-top,0px));box-shadow:none}
+[dir=rtl] aside{left:auto;right:0;transform:translateX(100%)}aside.show,[dir=rtl] aside.show{transform:none;box-shadow:0 0 40px rgba(0,0,0,.45)}
 #mb{display:block;margin-bottom:12px}main{padding:16px}#tabs{margin:-16px -16px 14px;top:-16px}.line{grid-template-columns:1fr 1fr}}
+@media(max-width:760px){.line{grid-template-columns:1fr 1fr}}
 /* phones: cards instead of wide tables, one-column forms, bigger touch targets */
 @media(max-width:760px){
 main{padding:12px}#tabs{margin:-12px -12px 12px;top:0}.tb{min-width:70px;max-width:150px}
@@ -173,9 +174,34 @@ tbody tr,.card table tr{transition:background-color .15s var(--ease)}
 #toast.out{animation:tout .2s ease forwards}@keyframes tout{to{opacity:0;transform:translate(-50%,8px)}}
 .pk input[type=checkbox]{transition:transform .15s var(--ease2)}.pk input[type=checkbox]:active{transform:scale(.85)}
 .lspin,.spin{will-change:transform}
+/* ---- touch / tablet / phone layer ---- */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{overscroll-behavior-y:contain;-webkit-tap-highlight-color:transparent}
+button,.btn,.tb,.g>button,.sub button,select,label,a,summary,.bit,[data-a]{touch-action:manipulation}
+main,aside,.wrap,.paper,#tabs,#stb,#bpan,.dlg{-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+#tabs,#stb{scrollbar-width:none}#tabs::-webkit-scrollbar,#stb::-webkit-scrollbar{display:none}
+#sdb{display:none;position:fixed;inset:0;z-index:4;background:rgba(10,12,30,.5);animation:fin .2s ease}aside.show~#sdb{display:block}
+.dlg{max-height:calc(100dvh - 32px);overflow-y:auto}
+@media(pointer:coarse){
+ .btn,.btn.s,.tb,.g>button,.sub button,#stb button{min-height:46px}.btn.s{min-height:42px}
+ .sub button,.g>button{padding-block:13px}
+ input,select,textarea{min-height:46px;font-size:16px}
+ input[type=checkbox],input[type=radio]{width:24px;height:24px;min-height:0;flex:none}
+ .pk{min-height:44px;display:flex;align-items:center;gap:10px}
+ .tb{min-height:44px}.tb .x{min-width:34px;min-height:34px}
+ .bit{padding-block:12px}.bit .x{min-width:40px;min-height:40px}
+ td .btn,td button{min-height:40px}
+ #bell{width:56px;height:56px}#bell svg{width:28px;height:28px}
+ .paper iframe{touch-action:pan-x pan-y pinch-zoom}
+ body{padding-bottom:env(safe-area-inset-bottom,0)}
+ #toast{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
+}
+@media(hover:none){.btn:hover,.pgc:hover{transform:none!important;box-shadow:none!important}.sub button:hover{transform:none}.g>button:hover,.sub button:hover{background:transparent}.g>button:active,.sub button:active{background:var(--side2)}.btn:active{opacity:.85}}
+@media(min-width:761px) and (max-width:1100px) and (pointer:coarse){main{padding:18px}.grid{grid-template-columns:1fr 1fr}.pgs{grid-template-columns:repeat(2,1fr)}}
+@media(max-height:500px) and (orientation:landscape){main{padding:10px}.lb{margin-top:1vh}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 </style></head><body>
-<aside id="side"></aside>
+<aside id="side"></aside><div id="sdb"></div>
 <main><div id="tabs"></div><button class="btn o" id="mb">☰</button><div id="stb"></div><div id="v"></div></main>
 <div id="login"></div>
 <div id="toast"></div>
@@ -1411,6 +1437,15 @@ function crExcel(R){var dl=(cur().dl||lang),rtl=dl==="ar",L=function(k){return t
    else if(k==="ArrowLeft"){ok=dx<-4&&Math.abs(dy)<me.height;d=-dx+Math.abs(dy)*3}else{ok=dx>4&&Math.abs(dy)<me.height;d=dx+Math.abs(dy)*3}
    if(ok&&d<bd){bd=d;best=x}});
   if(best){e.preventDefault();best.focus();try{best.select()}catch(x){}}else if(k==="ArrowUp"||k==="ArrowDown")e.preventDefault()},true)})();
+/* drawer: tap the backdrop to close, swipe from the screen edge to open, swipe back to close */
+(function(){var sd=$("side");function rtl(){return(document.documentElement.dir||"")==="rtl"||getComputedStyle(sd).right==="0px"}
+ function narrow(){return innerWidth<=900}
+ $("sdb").onclick=function(){sd.classList.remove("show")};
+ var x0=0,y0=0,t0=0,on=false;
+ document.addEventListener("touchstart",function(e){if(!narrow()||e.touches.length!==1){on=false;return}var t=e.touches[0];x0=t.clientX;y0=t.clientY;t0=Date.now();var edge=rtl()?innerWidth-x0<28:x0<28;on=sd.classList.contains("show")||edge},{passive:true});
+ document.addEventListener("touchend",function(e){if(!on)return;on=false;var t=e.changedTouches[0],dx=t.clientX-x0,dy=t.clientY-y0;if(Math.abs(dx)<60||Math.abs(dy)>Math.abs(dx)*.7||Date.now()-t0>700)return;
+  var open=sd.classList.contains("show"),toward=rtl()?dx<0:dx>0;if(!open&&toward)sd.classList.add("show");else if(open&&!toward)sd.classList.remove("show")},{passive:true});
+ addEventListener("resize",function(){if(!narrow())sd.classList.remove("show")})})();
 /* ================= Excel import ================= */
 var IMP=null;
 /* header aliases (Arabic + English); normalised with nz() below */
