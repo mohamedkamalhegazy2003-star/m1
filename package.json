@@ -1,6 +1,6 @@
 {
   "name": "quotation-management",
-  "version": "1.33.0",
+  "version": "1.34.0",
   "description": "Quotation Management desktop app",
   "main": "main.js",
   "author": {
