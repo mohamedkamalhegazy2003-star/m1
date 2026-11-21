@@ -199,6 +199,10 @@ main,aside,.wrap,.paper,#tabs,#stb,#bpan,.dlg{-webkit-overflow-scrolling:touch;o
 /* touch devices showing the desktop layout (phone/tablet browser in "desktop site" mode, wide tablets): let the page itself scroll - the most reliable and smoothest way to scroll by touch */
 @media(pointer:coarse) and (min-width:901px){body{display:flex;height:auto;min-height:100vh;overflow:visible}aside{position:sticky;top:0;height:100vh;height:100dvh;align-self:flex-start}main{height:auto;min-height:100vh;overflow:visible}#tabs{top:-26px}html,body{touch-action:pan-x pan-y pinch-zoom}.wrap,.paper,#tabs{touch-action:pan-x pan-y pinch-zoom}}
 @media(min-width:901px){html.touch body{display:flex;height:auto;min-height:100vh;overflow:visible}html.touch aside{position:sticky;top:0;height:100vh;height:100dvh;align-self:flex-start}html.touch main{height:auto;min-height:100vh;overflow:visible}html.touch #tabs{top:-26px}html.touch,html.touch body,html.touch body{touch-action:pan-x pan-y pinch-zoom}html.touch .wrap,html.touch .paper,html.touch #tabs{touch-action:pan-x pan-y pinch-zoom}}
+/* touch: tables sit in .wrap (overflow-x:auto) -> it used to swallow vertical swipes (overscroll contain). Let them chain to the page/main. */
+.wrap,.paper{overscroll-behavior:auto}
+@media(pointer:coarse){.wrap{overscroll-behavior-x:contain;overscroll-behavior-y:auto;overflow-y:hidden}.wrap *{touch-action:pan-x pan-y pinch-zoom}}
+html.touch .wrap{overscroll-behavior-x:contain;overscroll-behavior-y:auto;overflow-y:hidden}
 @media(pointer:coarse){html,body{touch-action:pan-x pan-y pinch-zoom}.wrap,.paper,.cbl,#bpan,#srl,.dlg{touch-action:pan-x pan-y pinch-zoom}}
 @media(hover:none){.btn:hover,.pgc:hover{transform:none!important;box-shadow:none!important}.sub button:hover{transform:none}.g>button:hover,.sub button:hover{background:transparent}.g>button:active,.sub button:active{background:var(--side2)}.btn:active{opacity:.85}}
 @media(min-width:761px) and (max-width:1100px) and (pointer:coarse){main{padding:18px}.grid{grid-template-columns:1fr 1fr}.pgs{grid-template-columns:repeat(2,1fr)}}
