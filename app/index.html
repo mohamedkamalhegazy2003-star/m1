@@ -441,7 +441,7 @@ function tokenSet(tk,remember){try{sessionStorage.removeItem("qm-token");localSt
 function tokenClear(){try{sessionStorage.removeItem("qm-token");localStorage.removeItem("qm-token")}catch(e){}}
 async function net(method,path,body){
  var h={"Content-Type":"application/json"};if(TOKEN)h.Authorization="Bearer "+TOKEN;
- var r=await fetch(path,{method:method,headers:h,body:body===undefined?undefined:JSON.stringify(body),cache:"no-store"}),j={};
+ var r=await fetch(path,{method:method,headers:h,body:body===undefined?undefined:(body.__raw!==undefined?body.__raw:JSON.stringify(body)),cache:"no-store"}),j={};
  try{j=await r.json()}catch(e){}
  if(r.status===401&&TOKEN&&path.indexOf("/api/auth/")!==0){TOKEN=null;ME=null;bellUpdate();tokenClear();showLogin(t("session_expired"))}
  return{ok:r.ok,status:r.status,j:j}}
@@ -449,10 +449,11 @@ function errMsg(j){j=j||{};if(j.error==="locked")return t("err_locked",{s:j.wait
 async function load(){
  if(REMOTE){var r=await net("GET","/api/state");if(!r.ok)throw new Error(r.status===401?"auth":"HTTP "+r.status);rev=r.j.rev;S=fix(r.j.data||{});S.users=r.j.users||[]}
  else{var d=null;try{d=JSON.parse(localStorage.getItem(K))}catch(e){}S=fix(d||{});S.users=[ME]}
- BASE=clone(S);delete BASE.users;
+ BASEJ=baseJ(S);
  var ch=false;["products","clients","companies"].forEach(function(k){if(canA(k,"edit")&&dedupe(S[k]))ch=true});
  if(ch&&!load.busy){load.busy=true;try{await save()}finally{load.busy=false}}}
-var DV=0,BASE=null,MERGE_FAIL={};
+var DV=0,BASEJ=null,MERGE_FAIL={};function baseJ(o){var c=Object.assign({},o);delete c.users;return JSON.stringify(c)}
+function srWarm(){clearTimeout(srWarm.t);srWarm.t=setTimeout(function(){var f=function(){try{if(ME&&S)srBuild()}catch(e){}};window.requestIdleCallback?requestIdleCallback(f,{timeout:3000}):f()},700)}
 function dataEqual(a,b){return JSON.stringify(a)===JSON.stringify(b)}
 function mergeData(base,local,remote){
  if(dataEqual(local,base))return clone(remote);
@@ -493,26 +494,27 @@ function mergeData(base,local,remote){
 }
 async function save(retries){retries=retries||0;DV++;
  var d=Object.assign({},S);delete d.users;
- if(!REMOTE){try{localStorage.setItem(K,JSON.stringify(d));BASE=clone(d);return true}catch(e){alert(t("save_err"));return false}}
- try{var r=await net("PUT","/api/state",{rev:rev,data:d});
+ var dj=JSON.stringify(d);
+ if(!REMOTE){try{localStorage.setItem(K,dj);BASEJ=dj;srWarm();return true}catch(e){alert(t("save_err"));return false}}
+ try{var r=await net("PUT","/api/state",{__raw:'{"rev":'+rev+',"data":'+dj+"}"});
   if(r.status===401)return false;
   if(r.status===409){
    if(retries<3){
     var latest=await net("GET","/api/state");
     if(latest.ok){
-     var remoteData=clone(latest.j.data||{}),merged=BASE?mergeData(BASE,d,remoteData):MERGE_FAIL;
+     var remoteData=clone(latest.j.data||{}),merged=BASEJ?mergeData(JSON.parse(BASEJ),d,remoteData):MERGE_FAIL;
      rev=latest.j.rev;
-     if(merged!==MERGE_FAIL){S=fix(merged);S.users=latest.j.users||[];BASE=clone(remoteData);return await save(retries+1)}
-     S=fix(remoteData);S.users=latest.j.users||[];BASE=clone(remoteData)
+     if(merged!==MERGE_FAIL){S=fix(merged);S.users=latest.j.users||[];BASEJ=JSON.stringify(remoteData);return await save(retries+1)}
+     S=fix(remoteData);S.users=latest.j.users||[];BASEJ=JSON.stringify(remoteData)
     }else await load()
    }else await load();
    alert(t("conflict"));render();return false
   }
   if(r.status===403){alert(t("err_forbidden"));await load();render();return false}
-  if(!r.ok)throw new Error("HTTP "+r.status);rev=r.j.rev;BASE=clone(d);return true}
+  if(!r.ok)throw new Error("HTTP "+r.status);rev=r.j.rev;BASEJ=dj;srWarm();return true}
  catch(e){alert(t("save_err"));return false}}
 async function poll(){if(!REMOTE||editing||!TOKEN||document.hidden)return;
- try{var r=await net("GET","/api/rev");if(r.ok&&r.j.rev!==rev){await load();var pn=pendingReq();if(lastPend!==null&&pn>lastPend&&can("q_add"))playSnd("req");lastPend=pn;render()}}catch(e){}}
+ try{var r=await net("GET","/api/rev");if(r.ok&&r.j.rev!==rev){await load();var pn=pendingReq();if(lastPend!==null&&pn>lastPend&&can("q_add"))playSnd("req");lastPend=pn;render();srWarm()}}catch(e){}}
 var PK={products:"pr_edit",clients:"cl_edit",companies:"company",requests:"rq_edit"};
 function can(p){return !!ME&&Array.isArray(ME.perms)&&ME.perms.indexOf(p)>=0}
 function canK(k){return can(PK[k])}
@@ -1893,7 +1895,7 @@ async function start(fresh){
  $("login").style.display="none";$("login").className="";document.body.classList.remove("lo");openG="g_quotations";tabsLoad();menu();render();
  if(!start.t)start.t=setInterval(poll,6000);
  if(!start.a){start.a=setInterval(alertPoll,8000);alertPoll()}
- reqPopup()}
+ reqPopup();srWarm()}
 var lastPend=null;
 /* ---- sounds: small synthesized tones (no files), or a custom file per event ---- */
 var SND={chime:[[784,0,.16],[988,.13,.16],[1319,.26,.32]],bell:[[880,0,.7,"sine"],[1760,0,.45,"sine"],[2640,0,.25,"sine"]],ping:[[1320,0,.22]],alert:[[660,0,.14,"square"],[880,.17,.14,"square"],[660,.34,.14,"square"],[880,.51,.2,"square"]]};
